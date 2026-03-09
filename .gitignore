@@ -6,5 +6,6 @@ riderModule.iml
 appsettings.Development.json
 appsettings.*.json
 !appsettings.json
-.env
+.env                         
 .env.local
+AiDevs.sln.DotSettings.user

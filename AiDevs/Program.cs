@@ -1,16 +1,18 @@
 using AiDevs.Core.Interfaces;
 using AiDevs.Infrastructure.Services;
 using AiDevs.Solutions.Task01;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi();
 
-// Register HttpClient for OpenRouter
+// Register HttpClient for OpenRouter and general use
 builder.Services.AddHttpClient<IOpenRouterService, OpenRouterService>();
+builder.Services.AddHttpClient();
 
 // Register all task solutions
 builder.Services.AddTransient<ITaskSolution, Task01Solution>();
@@ -24,8 +26,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();

@@ -1,3 +1,5 @@
+using AiDevs.Core.Models;
+
 namespace AiDevs.Core.Interfaces;
 
 /// <summary>

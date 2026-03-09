@@ -1,4 +1,4 @@
-namespace AiDevs.Core.Interfaces;
+namespace AiDevs.Core.Models;
 
 /// <summary>
 /// Standard result returned by all task solutions
