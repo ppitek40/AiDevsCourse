@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\AiDevs.Core\AiDevs.Core.csproj" />
+        <ProjectReference Include="..\AiDevs.Infrastructure\AiDevs.Infrastructure.csproj" />
+        <ProjectReference Include="..\AiDevs.Solutions\AiDevs.Solutions.csproj" />
+    </ItemGroup>
+
+</Project>

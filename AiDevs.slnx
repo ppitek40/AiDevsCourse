@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="AiDevs.Core/AiDevs.Core.csproj" />
+  <Project Path="AiDevs.Infrastructure/AiDevs.Infrastructure.csproj" />
+  <Project Path="AiDevs.Solutions/AiDevs.Solutions.csproj" />
+  <Project Path="AiDevs.Tests/AiDevs.Tests.csproj" />
+  <Project Path="AiDevs/AiDevs.csproj" />
+</Solution>
