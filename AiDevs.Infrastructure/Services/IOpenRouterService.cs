@@ -26,4 +26,16 @@ public interface IOpenRouterService
         double temperature = 0.7,
         int? maxTokens = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Chat with message history and function calling support
+    /// </summary>
+    Task<OpenRouterResponse> ChatWithToolsAsync(
+        List<OpenRouterMessage> messages,
+        List<OpenRouterTool>? tools = null,
+        object? toolChoice = null,
+        string model = "openai/gpt-4",
+        double temperature = 0.7,
+        int? maxTokens = null,
+        CancellationToken cancellationToken = default);
 }

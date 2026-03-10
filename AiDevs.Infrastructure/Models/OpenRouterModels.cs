@@ -15,6 +15,12 @@ public class OpenRouterRequest
 
     [JsonPropertyName("max_tokens")]
     public int? MaxTokens { get; set; }
+
+    [JsonPropertyName("tools")]
+    public List<OpenRouterTool>? Tools { get; set; }
+
+    [JsonPropertyName("tool_choice")]
+    public object? ToolChoice { get; set; }
 }
 
 public class OpenRouterMessage
@@ -23,7 +29,13 @@ public class OpenRouterMessage
     public string Role { get; set; } = "user";
 
     [JsonPropertyName("content")]
-    public string Content { get; set; } = string.Empty;
+    public string? Content { get; set; }
+
+    [JsonPropertyName("tool_calls")]
+    public List<OpenRouterToolCall>? ToolCalls { get; set; }
+
+    [JsonPropertyName("tool_call_id")]
+    public string? ToolCallId { get; set; }
 }
 
 public class OpenRouterResponse
@@ -57,4 +69,46 @@ public class OpenRouterUsage
 
     [JsonPropertyName("total_tokens")]
     public int TotalTokens { get; set; }
+}
+
+public class OpenRouterTool
+{
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "function";
+
+    [JsonPropertyName("function")]
+    public OpenRouterFunction Function { get; set; } = new();
+}
+
+public class OpenRouterFunction
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("parameters")]
+    public object? Parameters { get; set; }
+}
+
+public class OpenRouterToolCall
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "function";
+
+    [JsonPropertyName("function")]
+    public OpenRouterFunctionCall Function { get; set; } = new();
+}
+
+public class OpenRouterFunctionCall
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("arguments")]
+    public string Arguments { get; set; } = string.Empty;
 }

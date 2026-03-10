@@ -53,6 +53,11 @@ public class Task01Solution : ITaskSolution
                 .Where(p => p.Tags.Contains("transport"))
                 .ToList();
 
+            // Save transportPeople to result.json
+            var resultPath = Path.Combine(AppContext.BaseDirectory, "../../../../AiDevs.Solutions/Task01/result.json");
+            await File.WriteAllTextAsync(resultPath, JsonSerializer.Serialize(transportPeople), cancellationToken);
+            Console.WriteLine($"Transport people saved to {resultPath}");
+
             Console.WriteLine($"Found {transportPeople.Count} people with transport tag");
 
             // Prepare payload

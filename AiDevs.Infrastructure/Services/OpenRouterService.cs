@@ -58,7 +58,38 @@ public class OpenRouterService : IOpenRouterService
         return await SendRequestAsync(request, cancellationToken);
     }
 
+    public async Task<OpenRouterResponse> ChatWithToolsAsync(
+        List<OpenRouterMessage> messages,
+        List<OpenRouterTool>? tools = null,
+        object? toolChoice = null,
+        string model = "openai/gpt-4",
+        double temperature = 0.7,
+        int? maxTokens = null,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new OpenRouterRequest
+        {
+            Model = model,
+            Temperature = temperature,
+            MaxTokens = maxTokens,
+            Messages = messages,
+            Tools = tools,
+            ToolChoice = toolChoice
+        };
+
+        return await SendRequestWithFullResponseAsync(request, cancellationToken);
+    }
+
     private async Task<string> SendRequestAsync(OpenRouterRequest request, CancellationToken cancellationToken)
+    {
+        var openRouterResponse = await SendRequestWithFullResponseAsync(request, cancellationToken);
+        return openRouterResponse.Choices?.FirstOrDefault()?.Message?.Content
+            ?? throw new InvalidOperationException("No response from OpenRouter");
+    }
+
+    private async Task<OpenRouterResponse> SendRequestWithFullResponseAsync(
+        OpenRouterRequest request,
+        CancellationToken cancellationToken)
     {
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -69,8 +100,6 @@ public class OpenRouterService : IOpenRouterService
         };
 
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-        httpRequest.Headers.Add("HTTP-Referer", "https://github.com/yourusername/aidevs");
-        httpRequest.Headers.Add("X-Title", "AiDevs Course");
 
         var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -78,7 +107,7 @@ public class OpenRouterService : IOpenRouterService
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
         var openRouterResponse = JsonSerializer.Deserialize<OpenRouterResponse>(responseJson);
 
-        return openRouterResponse?.Choices?.FirstOrDefault()?.Message?.Content
+        return openRouterResponse
             ?? throw new InvalidOperationException("No response from OpenRouter");
     }
 }
