@@ -1,42 +1,26 @@
-using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AiDevs.Core.Interfaces;
 using AiDevs.Core.Models;
+using AiDevs.Infrastructure.Models;
 using AiDevs.Infrastructure.Services;
-using Microsoft.Extensions.Configuration;
 
 namespace AiDevs.Solutions.Task01;
 
 /// <summary>
 /// Task 01: Filter people and tag them based on job descriptions
 /// </summary>
-public class Task01Solution : ITaskSolution
+public class Task01Solution(IOpenRouterService openRouterService, IAiDevsApiService aiDevsApiService) : ITaskSolution
 {
-    private readonly IOpenRouterService _openRouterService;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IConfiguration _configuration;
-
     public int TaskId => 1;
 
-    public Task01Solution(
-        IOpenRouterService openRouterService,
-        IHttpClientFactory httpClientFactory,
-        IConfiguration configuration)
-    {
-        _openRouterService = openRouterService;
-        _httpClientFactory = httpClientFactory;
-        _configuration = configuration;
-    }
-
-    public async Task<SolutionResult> ExecuteAsync(string input, CancellationToken cancellationToken = default)
+    public async Task<SolutionResult> ExecuteAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             // Read and parse CSV file
             var csvPath = Path.Combine(AppContext.BaseDirectory, "../../../../AiDevs.Solutions/Task01/people.csv");
-            var people = await ParseCsvAsync(csvPath, cancellationToken);
+            var people = await CsvParser.ParseCsvAsync(csvPath, cancellationToken);
 
             // Filter people by criteria
             var filteredPeople = people
@@ -61,24 +45,17 @@ public class Task01Solution : ITaskSolution
             Console.WriteLine($"Found {transportPeople.Count} people with transport tag");
 
             // Prepare payload
-            var apiKey = _configuration["AiDevs:ApiKey"];
-            var payload = new
+            var answer = transportPeople.Select(p => new
             {
-                apikey = apiKey,
-                task = "people",
-                answer = transportPeople.Select(p => new
-                {
-                    name = p.Name,
-                    surname = p.Surname,
-                    gender = p.Gender,
-                    born = p.BirthYear,
-                    city = p.BirthPlace,
-                    tags = p.Tags.ToArray()
-                }).ToArray()
-            };
+                name = p.Name,
+                surname = p.Surname,
+                gender = p.Gender,
+                born = p.BirthYear,
+                city = p.BirthPlace,
+                tags = p.Tags.ToArray()
+            }).ToArray();
 
-            // Submit to verification endpoint
-            var result = await SubmitResultAsync(payload, cancellationToken);
+            var result = await aiDevsApiService.VerifyAsync("people", answer, cancellationToken);
 
             return SolutionResult.Ok(result, new Dictionary<string, object>
             {
@@ -93,64 +70,6 @@ public class Task01Solution : ITaskSolution
         }
     }
 
-    private async Task<List<Person>> ParseCsvAsync(string filePath, CancellationToken cancellationToken)
-    {
-        var people = new List<Person>();
-        var lines = await File.ReadAllLinesAsync(filePath, cancellationToken);
-
-        // Skip header
-        for (int i = 1; i < lines.Length; i++)
-        {
-            var line = lines[i];
-            var parts = ParseCsvLine(line);
-
-            if (parts.Length >= 7)
-            {
-                var person = new Person
-                {
-                    Name = parts[0],
-                    Surname = parts[1],
-                    Gender = parts[2],
-                    BirthDate = DateTime.ParseExact(parts[3], "yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    BirthPlace = parts[4],
-                    BirthCountry = parts[5],
-                    Job = parts[6]
-                };
-                people.Add(person);
-            }
-        }
-
-        return people;
-    }
-
-    private string[] ParseCsvLine(string line)
-    {
-        var parts = new List<string>();
-        var current = new StringBuilder();
-        bool inQuotes = false;
-
-        for (int i = 0; i < line.Length; i++)
-        {
-            char c = line[i];
-
-            if (c == '"')
-            {
-                inQuotes = !inQuotes;
-            }
-            else if (c == ',' && !inQuotes)
-            {
-                parts.Add(current.ToString());
-                current.Clear();
-            }
-            else
-            {
-                current.Append(c);
-            }
-        }
-        parts.Add(current.ToString());
-
-        return parts.ToArray();
-    }
 
     private async Task TagPeopleAsync(List<Person> people, CancellationToken cancellationToken)
     {
@@ -189,9 +108,9 @@ Jedna osoba może mieć wiele tagów. Zwróć TYLKO JSON array w formacie:
 Opisy:
 {jobDescriptions}";
 
-        var response = await _openRouterService.CompleteAsync(
+        var response = await openRouterService.CompleteAsync(
             prompt,
-            model: "openai/gpt-4o",
+            model: OpenRouterModel.Gpt4o,
             temperature: 0.3,
             cancellationToken: cancellationToken
         );
@@ -225,33 +144,10 @@ Opisy:
         }
     }
 
-    private async Task<string> SubmitResultAsync(object payload, CancellationToken cancellationToken)
-    {
-        var httpClient = _httpClientFactory.CreateClient();
-        var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
-
-        Console.WriteLine($"Submitting payload:\n{json}");
-
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await httpClient.PostAsync(
-            "https://hub.ag3nts.org/verify",
-            content,
-            cancellationToken
-        );
-
-        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        return responseContent;
-    }
-
     private class TagResult
     {
         [JsonPropertyName("index")]
-        public int Index { get; set; }
+        public int Index { get; set; }  
 
         [JsonPropertyName("tags")]
         public List<string> Tags { get; set; } = new();

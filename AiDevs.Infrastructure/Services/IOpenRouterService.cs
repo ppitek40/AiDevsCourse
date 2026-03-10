@@ -12,7 +12,7 @@ public interface IOpenRouterService
     /// </summary>
     Task<string> CompleteAsync(
         string prompt,
-        string model = "openai/gpt-4",
+        OpenRouterModel model = OpenRouterModel.Gpt4o,
         double temperature = 0.7,
         int? maxTokens = null,
         CancellationToken cancellationToken = default);
@@ -22,7 +22,7 @@ public interface IOpenRouterService
     /// </summary>
     Task<string> ChatAsync(
         List<OpenRouterMessage> messages,
-        string model = "openai/gpt-4",
+        OpenRouterModel model = OpenRouterModel.Gpt4o,
         double temperature = 0.7,
         int? maxTokens = null,
         CancellationToken cancellationToken = default);
@@ -34,7 +34,7 @@ public interface IOpenRouterService
         List<OpenRouterMessage> messages,
         List<OpenRouterTool>? tools = null,
         object? toolChoice = null,
-        string model = "openai/gpt-4",
+        OpenRouterModel model = OpenRouterModel.Gpt4o,
         double temperature = 0.7,
         int? maxTokens = null,
         CancellationToken cancellationToken = default);

@@ -2,7 +2,6 @@
 using System.Text.Json.Serialization;
 using AiDevs.Core.Interfaces;
 using AiDevs.Core.Models;
-using AiDevs.Infrastructure.FunctionCalling;
 using AiDevs.Infrastructure.Models;
 using AiDevs.Infrastructure.Services;
 
@@ -21,7 +20,7 @@ public class Task02Solution : ITaskSolution
 
     public int TaskId => 2;
 
-    public async Task<SolutionResult> ExecuteAsync(string input, CancellationToken cancellationToken = default)
+    public async Task<SolutionResult> ExecuteAsync(CancellationToken cancellationToken = default)
     {
         // Load suspects from Task01
         var suspectsJson = await File.ReadAllTextAsync("../AiDevs.Solutions/Task01/result.json", cancellationToken);
@@ -65,7 +64,7 @@ Power Plants (with coordinates):
         var answer = await _agentSessionService.ExecuteAgentSessionAsync(
             messages,
             [typeof(GetPersonLocationsFunction), typeof(GetAccessLevelFunction)],
-            model: "anthropic/claude-3.5-sonnet",
+            model: OpenRouterModel.Claude35Sonnet,
             temperature: 0,
             maxIterations: 20,
             cancellationToken: cancellationToken

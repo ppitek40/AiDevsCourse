@@ -19,14 +19,14 @@ public class AgentSessionService : IAgentSessionService
 
     public async Task<string> ExecuteAgentSessionAsync(
         List<OpenRouterMessage> initialMessages,
-        IEnumerable<IFunctionHandler> handlerTypes,
-        string model = "anthropic/claude-3.5-sonnet",
+        List<Type> handlerTypes,
+        OpenRouterModel model = OpenRouterModel.Claude35Sonnet,
         double temperature = 0,
         int maxIterations = 20,
         CancellationToken cancellationToken = default)
     {
-        var tools = BuildToolsFromHandlers(handlerTypes.ToList());
-        var handlers = InstantiateHandlers(handlerTypes.ToList());
+        var tools = BuildToolsFromHandlers(handlerTypes);
+        var handlers = InstantiateHandlers(handlerTypes);
 
         var messages = new List<OpenRouterMessage>(initialMessages);
         var iteration = 0;
@@ -84,6 +84,14 @@ public class AgentSessionService : IAgentSessionService
         throw new InvalidOperationException($"Agent session exceeded maximum iterations ({maxIterations})");
     }
 
+    private List<object> InstantiateHandlers(List<Type> handlerTypes)
+    {
+        return handlerTypes
+            .Select(_serviceProvider.GetService)
+            .Where(h => h != null)
+            .Select(h => h!)
+            .ToList();
+    }
 
     private List<OpenRouterTool> BuildToolsFromHandlers(List<Type> handlerTypes)
     {

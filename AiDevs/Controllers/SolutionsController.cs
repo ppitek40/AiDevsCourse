@@ -1,5 +1,4 @@
 using AiDevs.Core.Interfaces;
-using AiDevs.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiDevs.Controllers;
@@ -23,13 +22,11 @@ public class SolutionsController : ControllerBase
     /// Execute a specific task solution
     /// </summary>
     /// <param name="taskId">Task ID (1-25)</param>
-    /// <param name="request">Input data for the task</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Solution result</returns>
     [HttpPost("{taskId}")]
     public async Task<IActionResult> ExecuteSolution(
         int taskId,
-        [FromBody] ExecuteSolutionRequest request,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation("Executing solution for Task {TaskId}", taskId);
@@ -43,7 +40,7 @@ public class SolutionsController : ControllerBase
 
         try
         {
-            var result = await solution.ExecuteAsync(request.Input, cancellationToken);
+            var result = await solution.ExecuteAsync(cancellationToken);
 
             if (result.Success)
             {

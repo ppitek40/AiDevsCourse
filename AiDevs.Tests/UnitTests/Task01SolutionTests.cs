@@ -1,6 +1,5 @@
 using AiDevs.Infrastructure.Services;
 using AiDevs.Solutions.Task01;
-using Microsoft.Extensions.Configuration;
 using Moq;
 
 namespace AiDevs.Tests.UnitTests;
@@ -15,9 +14,7 @@ public class Task01SolutionTests
     {
         // Arrange
         var mockOpenRouter = new Mock<IOpenRouterService>();
-        var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-        var mockConfiguration = new Mock<IConfiguration>();
-        var solution = new Task01Solution(mockOpenRouter.Object, mockHttpClientFactory.Object, mockConfiguration.Object);
+        var solution = new Task01Solution(mockOpenRouter.Object, new Mock<IAiDevsApiService>().Object);
 
         // Act
         var taskId = solution.TaskId;

@@ -18,5 +18,5 @@ public interface ITaskSolution
     /// <param name="input">Task-specific input data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Solution result</returns>
-    Task<SolutionResult> ExecuteAsync(string input, CancellationToken cancellationToken = default);
+    Task<SolutionResult> ExecuteAsync(CancellationToken cancellationToken = default);
 }

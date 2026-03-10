@@ -5,18 +5,11 @@ using Microsoft.Extensions.Configuration;
 
 namespace AiDevs.Infrastructure.Services;
 
-public class AiDevsApiService : IAiDevsApiService
+public class AiDevsApiService(HttpClient httpClient, IConfiguration configuration) : IAiDevsApiService
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
+    private readonly string _apiKey = configuration["AiDevs:ApiKey"]
+        ?? throw new InvalidOperationException("AiDevs API key not configured");
     private const string BaseUrl = "https://hub.ag3nts.org/api";
-
-    public AiDevsApiService(HttpClient httpClient, IConfiguration configuration)
-    {
-        _httpClient = httpClient;
-        _apiKey = configuration["AiDevs:ApiKey"]
-            ?? throw new InvalidOperationException("AiDevs API key not configured");
-    }
 
     public async Task<List<Coordinate>> GetLocationAsync(string name, string surname, CancellationToken cancellationToken = default)
     {
@@ -30,13 +23,13 @@ public class AiDevsApiService : IAiDevsApiService
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync($"{BaseUrl}/location", content, cancellationToken);
+        var response = await httpClient.PostAsync($"{BaseUrl}/location", content, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
         var locationResponse = JsonSerializer.Deserialize<List<Coordinate>>(responseJson);
 
-        return locationResponse ?? new List<Coordinate>();
+        return locationResponse ?? [];
     }
 
     public async Task<int> GetAccessLevelAsync(string name, string surname, int birthYear, CancellationToken cancellationToken = default)
@@ -52,7 +45,7 @@ public class AiDevsApiService : IAiDevsApiService
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync($"{BaseUrl}/accesslevel", content, cancellationToken);
+        var response = await httpClient.PostAsync($"{BaseUrl}/accesslevel", content, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -73,25 +66,18 @@ public class AiDevsApiService : IAiDevsApiService
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync($"{BaseUrl}/../verify", content, cancellationToken);
+        var response = await httpClient.PostAsync($"{BaseUrl}/../verify", content, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
-
-    private class LocationResponse
-    {
-        [JsonPropertyName("locations")]
-        public List<Coordinate>? Locations { get; set; }
-    }
-
     private class AccessLevelResponse
     {
         [JsonPropertyName("name")]
-        public string Name { get; init; }
+        public required string Name { get; init; }
         [JsonPropertyName("surname")]
-        public string Surname { get; init; }
+        public required string Surname { get; init; }
         [JsonPropertyName("accessLevel")]
-        public int AccessLevel { get; set; }
+        public required int AccessLevel { get; init; }
     }
 }
