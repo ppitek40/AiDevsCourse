@@ -19,44 +19,51 @@ public class SolutionsController : ControllerBase
     }
 
     /// <summary>
-    /// Execute a specific task solution
+    /// Execute a specific task solution with streaming
     /// </summary>
     /// <param name="taskId">Task ID (1-25)</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Solution result</returns>
+    /// <returns>Server-Sent Events stream</returns>
     [HttpPost("{taskId}")]
-    public async Task<IActionResult> ExecuteSolution(
+    public async Task ExecuteSolutionStream(
         int taskId,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Executing solution for Task {TaskId}", taskId);
+        _logger.LogInformation("Executing solution for Task {TaskId} with streaming", taskId);
 
         var solution = _solutions.FirstOrDefault(s => s.TaskId == taskId);
         if (solution == null)
         {
             _logger.LogWarning("Solution for Task {TaskId} not found", taskId);
-            return NotFound(new { error = $"Solution for Task {taskId} not found" });
+            Response.StatusCode = 404;
+            await Response.WriteAsync($"{{\"error\": \"Solution for Task {taskId} not found\"}}", cancellationToken);
+            return;
         }
+
+        // Set headers for Server-Sent Events
+        Response.ContentType = "text/event-stream";
+        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("Connection", "keep-alive");
+        Response.Headers.Append("X-Accel-Buffering", "no");
 
         try
         {
-            var result = await solution.ExecuteAsync(cancellationToken);
+            await foreach (var update in solution.ExecuteStreamAsync(cancellationToken))
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(update);
+                await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
+            }
 
-            if (result.Success)
-            {
-                _logger.LogInformation("Task {TaskId} completed successfully", taskId);
-                return Ok(result);
-            }
-            else
-            {
-                _logger.LogError("Task {TaskId} failed: {Error}", taskId, result.Error);
-                return BadRequest(result);
-            }
+            _logger.LogInformation("Task {TaskId} streaming completed", taskId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception while executing Task {TaskId}", taskId);
-            return StatusCode(500, new { error = "Internal server error", message = ex.Message });
+            _logger.LogError(ex, "Unhandled exception while streaming Task {TaskId}", taskId);
+            var errorUpdate = new { type = "error", error = ex.Message };
+            var json = System.Text.Json.JsonSerializer.Serialize(errorUpdate);
+            await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
         }
     }
 

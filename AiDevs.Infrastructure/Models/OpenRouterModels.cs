@@ -21,6 +21,9 @@ public class OpenRouterRequest
 
     [JsonPropertyName("tool_choice")]
     public object? ToolChoice { get; set; }
+
+    [JsonPropertyName("stream")]
+    public bool Stream { get; set; }
 }
 
 public class OpenRouterMessage
@@ -111,4 +114,40 @@ public class OpenRouterFunctionCall
 
     [JsonPropertyName("arguments")]
     public string Arguments { get; set; } = string.Empty;
+}
+
+public class OpenRouterStreamChunk
+{
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("choices")]
+    public List<OpenRouterStreamChoice>? Choices { get; set; }
+
+    [JsonPropertyName("usage")]
+    public OpenRouterUsage? Usage { get; set; }
+}
+
+public class OpenRouterStreamChoice
+{
+    [JsonPropertyName("delta")]
+    public OpenRouterDelta? Delta { get; set; }
+
+    [JsonPropertyName("finish_reason")]
+    public string? FinishReason { get; set; }
+
+    [JsonPropertyName("index")]
+    public int Index { get; set; }
+}
+
+public class OpenRouterDelta
+{
+    [JsonPropertyName("role")]
+    public string? Role { get; set; }
+
+    [JsonPropertyName("content")]
+    public string? Content { get; set; }
+
+    [JsonPropertyName("tool_calls")]
+    public List<OpenRouterToolCall>? ToolCalls { get; set; }
 }

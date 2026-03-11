@@ -8,19 +8,9 @@ namespace AiDevs.Infrastructure.Services;
 public interface IOpenRouterService
 {
     /// <summary>
-    /// Complete a prompt using the specified model
+    /// Stream chat responses
     /// </summary>
-    Task<string> CompleteAsync(
-        string prompt,
-        OpenRouterModel model = OpenRouterModel.Gpt4o,
-        double temperature = 0.7,
-        int? maxTokens = null,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Chat with message history using the specified model
-    /// </summary>
-    Task<string> ChatAsync(
+    IAsyncEnumerable<string> StreamChatAsync(
         List<OpenRouterMessage> messages,
         OpenRouterModel model = OpenRouterModel.Gpt4o,
         double temperature = 0.7,
@@ -28,9 +18,9 @@ public interface IOpenRouterService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Chat with message history and function calling support
+    /// Stream chat responses with function calling support
     /// </summary>
-    Task<OpenRouterResponse> ChatWithToolsAsync(
+    IAsyncEnumerable<OpenRouterStreamChunk> StreamChatWithToolsAsync(
         List<OpenRouterMessage> messages,
         List<OpenRouterTool>? tools = null,
         object? toolChoice = null,

@@ -1,10 +1,11 @@
+using AiDevs.Core.Models;
 using AiDevs.Infrastructure.Models;
 
 namespace AiDevs.Infrastructure.Services;
 
 public interface IAgentSessionService
 {
-    Task<string> ExecuteAgentSessionAsync(
+    IAsyncEnumerable<StreamUpdate> ExecuteAgentSessionStreamAsync(
         List<OpenRouterMessage> initialMessages,
         List<Type> handlerTypes,
         OpenRouterModel model = OpenRouterModel.Claude35Sonnet,

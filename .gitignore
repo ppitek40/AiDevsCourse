@@ -9,3 +9,4 @@ appsettings.*.json
 .env                         
 .env.local
 AiDevs.sln.DotSettings.user
+.idea/

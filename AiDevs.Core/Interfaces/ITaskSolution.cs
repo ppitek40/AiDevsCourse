@@ -13,10 +13,9 @@ public interface ITaskSolution
     int TaskId { get; }
 
     /// <summary>
-    /// Execute the solution with given input
+    /// Execute the solution with streaming progress updates
     /// </summary>
-    /// <param name="input">Task-specific input data</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Solution result</returns>
-    Task<SolutionResult> ExecuteAsync(CancellationToken cancellationToken = default);
+    /// <returns>Stream of progress updates</returns>
+    IAsyncEnumerable<StreamUpdate> ExecuteStreamAsync(CancellationToken cancellationToken = default);
 }

@@ -1,12 +1,14 @@
 import { Component, ChangeDetectionStrategy, inject, input, computed, effect, viewChild, ElementRef } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { AgentOutputService } from '../../services/agent-output.service';
 import { TaskService } from '../../services/task.service';
+import { ApiService } from '../../services/api.service';
+import { LogLevel } from '../../models/agent-output.model';
+import { TerminalRecordComponent } from '../terminal-record/terminal-record.component';
 
 @Component({
   selector: 'app-terminal-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [TerminalRecordComponent],
   template: `
     <div class="terminal-container">
       <div class="terminal-header">
@@ -14,14 +16,34 @@ import { TaskService } from '../../services/task.service';
           <span class="terminal-icon">▶</span>
           <span>{{ taskName() }}</span>
         </div>
-        <button
-          type="button"
-          class="clear-button"
-          (click)="clearOutput()"
-          aria-label="Clear terminal output"
-        >
-          Clear
-        </button>
+        <div class="terminal-actions">
+          <button
+            type="button"
+            class="action-button start-button"
+            (click)="startTask()"
+            [disabled]="taskId() === null"
+            aria-label="Start task execution"
+          >
+            Start
+          </button>
+          <button
+            type="button"
+            class="action-button stop-button"
+            (click)="stopTask()"
+            [disabled]="taskId() === null || !isStreamActive()"
+            aria-label="Stop task execution"
+          >
+            Stop
+          </button>
+          <button
+            type="button"
+            class="action-button clear-button"
+            (click)="clearOutput()"
+            aria-label="Clear terminal output"
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
       <div class="terminal-output" #terminalOutput>
@@ -31,11 +53,7 @@ import { TaskService } from '../../services/task.service';
           </div>
         } @else {
           @for (output of outputs(); track output.id) {
-            <div class="terminal-line" [class]="'level-' + output.level">
-              <span class="timestamp">{{ output.timestamp | date:'HH:mm:ss.SSS' }}</span>
-              <span class="level-badge" [class]="'level-' + output.level">{{ output.level.toUpperCase() }}</span>
-              <span class="message">{{ output.message }}</span>
-            </div>
+            <app-terminal-record [output]="output" />
           }
         }
       </div>
@@ -73,7 +91,12 @@ import { TaskService } from '../../services/task.service';
       color: #fbbf24;
     }
 
-    .clear-button {
+    .terminal-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .action-button {
       padding: 0.5rem 1rem;
       background: transparent;
       border: 1px solid #30363d;
@@ -85,10 +108,27 @@ import { TaskService } from '../../services/task.service';
       font-family: system-ui, -apple-system, sans-serif;
     }
 
-    .clear-button:hover {
+    .action-button:hover:not(:disabled) {
       background: #21262d;
       border-color: #8b949e;
       color: #c9d1d9;
+    }
+
+    .action-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .start-button:hover:not(:disabled) {
+      background: #00ff8820;
+      border-color: #00ff88;
+      color: #00ff88;
+    }
+
+    .stop-button:hover:not(:disabled) {
+      background: #ef444420;
+      border-color: #ef4444;
+      color: #ef4444;
     }
 
     .terminal-output {
@@ -115,69 +155,6 @@ import { TaskService } from '../../services/task.service';
       margin: 0;
     }
 
-    .terminal-line {
-      display: flex;
-      gap: 0.75rem;
-      padding: 0.375rem 0;
-      border-bottom: 1px solid #0d1117;
-    }
-
-    .terminal-line:hover {
-      background: #161b22;
-    }
-
-    .timestamp {
-      color: #6b7280;
-      flex-shrink: 0;
-      font-size: 0.85rem;
-    }
-
-    .level-badge {
-      flex-shrink: 0;
-      padding: 0.125rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .level-badge.level-info {
-      background: #1e40af20;
-      color: #60a5fa;
-    }
-
-    .level-badge.level-success {
-      background: #00ff8820;
-      color: #00ff88;
-    }
-
-    .level-badge.level-warning {
-      background: #fbbf2420;
-      color: #fbbf24;
-    }
-
-    .level-badge.level-error {
-      background: #ef444420;
-      color: #ef4444;
-    }
-
-    .message {
-      color: #c9d1d9;
-      flex: 1;
-      word-break: break-word;
-    }
-
-    .terminal-line.level-error .message {
-      color: #ff6b6b;
-    }
-
-    .terminal-line.level-success .message {
-      color: #00ff88;
-    }
-
-    .terminal-line.level-warning .message {
-      color: #fbbf24;
-    }
 
     /* Scrollbar styling */
     .terminal-output::-webkit-scrollbar {
@@ -201,6 +178,7 @@ import { TaskService } from '../../services/task.service';
 export class TerminalViewComponent {
   private readonly agentOutputService = inject(AgentOutputService);
   private readonly taskService = inject(TaskService);
+  private readonly apiService = inject(ApiService);
 
   readonly taskId = input<number | null>(null);
 
@@ -219,12 +197,34 @@ export class TerminalViewComponent {
     return task ? task.name : 'Terminal';
   });
 
+  protected readonly isStreamActive = computed(() => {
+    const id = this.taskId();
+    return id !== null && this.agentOutputService.isStreamActive(id);
+  });
+
   constructor() {
     // Auto-scroll to bottom when new output is added
     effect(() => {
       this.outputs(); // Track changes
       setTimeout(() => this.scrollToBottom(), 0);
     });
+  }
+
+  protected startTask(): void {
+    const id = this.taskId();
+    if (id !== null) {
+      const streamUrl = this.apiService.getStreamUrl(`solutions/${id}`);
+      this.agentOutputService.addOutput(id, 'Connecting to task execution endpoint...', LogLevel.Info);
+      this.agentOutputService.startTaskStream(id, streamUrl);
+    }
+  }
+
+  protected stopTask(): void {
+    const id = this.taskId();
+    if (id !== null) {
+      this.agentOutputService.stopTaskStream(id);
+      this.agentOutputService.addOutput(id, 'warning', LogLevel.Warning);
+    }
   }
 
   protected clearOutput(): void {

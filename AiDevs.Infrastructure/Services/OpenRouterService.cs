@@ -19,53 +19,40 @@ public class OpenRouterService : IOpenRouterService
             ?? throw new InvalidOperationException("OpenRouter API key not configured");
     }
 
-    public async Task<string> CompleteAsync(
-        string prompt,
-        OpenRouterModel model = OpenRouterModel.Gpt4o,
-        double temperature = 0.7,
-        int? maxTokens = null,
-        CancellationToken cancellationToken = default)
-    {
-        var request = new OpenRouterRequest
-        {
-            Model = model.ToModelId(),
-            Temperature = temperature,
-            MaxTokens = maxTokens,
-            Messages = new List<OpenRouterMessage>
-            {
-                new() { Role = "user", Content = prompt }
-            }
-        };
-
-        return await SendRequestAsync(request, cancellationToken);
-    }
-
-    public async Task<string> ChatAsync(
+    public async IAsyncEnumerable<string> StreamChatAsync(
         List<OpenRouterMessage> messages,
         OpenRouterModel model = OpenRouterModel.Gpt4o,
         double temperature = 0.7,
         int? maxTokens = null,
-        CancellationToken cancellationToken = default)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var request = new OpenRouterRequest
         {
             Model = model.ToModelId(),
             Temperature = temperature,
             MaxTokens = maxTokens,
-            Messages = messages
+            Messages = messages,
+            Stream = true
         };
 
-        return await SendRequestAsync(request, cancellationToken);
+        await foreach (var chunk in StreamRequestAsync(request, cancellationToken))
+        {
+            var content = chunk.Choices?.FirstOrDefault()?.Delta?.Content;
+            if (!string.IsNullOrEmpty(content))
+            {
+                yield return content;
+            }
+        }
     }
 
-    public async Task<OpenRouterResponse> ChatWithToolsAsync(
+    public async IAsyncEnumerable<OpenRouterStreamChunk> StreamChatWithToolsAsync(
         List<OpenRouterMessage> messages,
         List<OpenRouterTool>? tools = null,
         object? toolChoice = null,
         OpenRouterModel model = OpenRouterModel.Gpt4o,
         double temperature = 0.7,
         int? maxTokens = null,
-        CancellationToken cancellationToken = default)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var request = new OpenRouterRequest
         {
@@ -74,22 +61,19 @@ public class OpenRouterService : IOpenRouterService
             MaxTokens = maxTokens,
             Messages = messages,
             Tools = tools,
-            ToolChoice = toolChoice
+            ToolChoice = toolChoice,
+            Stream = true
         };
 
-        return await SendRequestWithFullResponseAsync(request, cancellationToken);
+        await foreach (var chunk in StreamRequestAsync(request, cancellationToken))
+        {
+            yield return chunk;
+        }
     }
 
-    private async Task<string> SendRequestAsync(OpenRouterRequest request, CancellationToken cancellationToken)
-    {
-        var openRouterResponse = await SendRequestWithFullResponseAsync(request, cancellationToken);
-        return openRouterResponse.Choices?.FirstOrDefault()?.Message?.Content
-            ?? throw new InvalidOperationException("No response from OpenRouter");
-    }
-
-    private async Task<OpenRouterResponse> SendRequestWithFullResponseAsync(
+    private async IAsyncEnumerable<OpenRouterStreamChunk> StreamRequestAsync(
         OpenRouterRequest request,
-        CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -101,13 +85,28 @@ public class OpenRouterService : IOpenRouterService
 
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
 
-        var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        using var response = await _httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
-        var openRouterResponse = JsonSerializer.Deserialize<OpenRouterResponse>(responseJson);
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var reader = new StreamReader(stream);
 
-        return openRouterResponse
-            ?? throw new InvalidOperationException("No response from OpenRouter");
+        while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+        {
+            var line = await reader.ReadLineAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (line.StartsWith("data: "))
+            {
+                var data = line.Substring(6);
+                if (data == "[DONE]") break;
+
+                var chunk = JsonSerializer.Deserialize<OpenRouterStreamChunk>(data);
+                if (chunk != null)
+                {
+                    yield return chunk;
+                }
+            }
+        }
     }
 }

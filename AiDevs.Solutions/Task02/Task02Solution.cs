@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using AiDevs.Core.Interfaces;
 using AiDevs.Core.Models;
@@ -20,12 +21,24 @@ public class Task02Solution : ITaskSolution
 
     public int TaskId => 2;
 
-    public async Task<SolutionResult> ExecuteAsync(CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<StreamUpdate> ExecuteStreamAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         // Load suspects from Task01
+        yield return new StreamUpdate
+        {
+            Type = StreamUpdateType.Status,
+            Content = "Loading suspects data..."
+        };
+
         var suspectsJson = await File.ReadAllTextAsync("../AiDevs.Solutions/Task01/result.json", cancellationToken);
 
         // Load power plants
+        yield return new StreamUpdate
+        {
+            Type = StreamUpdateType.Status,
+            Content = "Loading power plants data..."
+        };
+
         var powerPlantsJson = await File.ReadAllTextAsync("../AiDevs.Solutions/Task02/findhim_locations.json", cancellationToken);
 
         // Create prompt for LLM
@@ -60,32 +73,59 @@ Power Plants (with coordinates):
             new() { Role = "user", Content = "Find the suspect who visited a power plant. Check each person's locations and match them with power plant coordinates." }
         };
 
+        yield return new StreamUpdate
+        {
+            Type = StreamUpdateType.Status,
+            Content = "Starting agent session..."
+        };
+
         // Execute agent session with function handlers
-        var answer = await _agentSessionService.ExecuteAgentSessionAsync(
+        string? answer = null;
+        await foreach (var update in _agentSessionService.ExecuteAgentSessionStreamAsync(
             messages,
             [typeof(GetPersonLocationsFunction), typeof(GetAccessLevelFunction)],
             model: OpenRouterModel.Claude35Sonnet,
             temperature: 0,
             maxIterations: 20,
-            cancellationToken: cancellationToken
-        );
-
-        // Submit to verify
-        var answerObj = JsonSerializer.Deserialize<SuspectAnswer>(answer);
-        if (answerObj != null)
+            cancellationToken: cancellationToken))
         {
-            var verifyResponse = await _aiDevsApiService.VerifyAsync("findhim", answerObj, cancellationToken);
-            return new SolutionResult
+            yield return update;
+
+            if (update.IsComplete && update.FinalResult?.Success == true)
             {
-                Success = true,
-                Output = JsonSerializer.Serialize(verifyResponse)
-            };
+                answer = update.FinalResult.Output;
+            }
         }
 
-        return new SolutionResult
+        if (answer != null)
         {
-            Success = false,
-            Error = "Failed to find suspect"
+            yield return new StreamUpdate
+            {
+                Type = StreamUpdateType.Status,
+                Content = "Verifying answer..."
+            };
+
+            // Submit to verify
+            var answerObj = JsonSerializer.Deserialize<SuspectAnswer>(answer);
+            if (answerObj != null)
+            {
+                var verifyResponse = await _aiDevsApiService.VerifyAsync("findhim", answerObj, cancellationToken);
+
+                yield return new StreamUpdate
+                {
+                    Type = StreamUpdateType.Complete,
+                    IsComplete = true,
+                    FinalResult = SolutionResult.Ok(JsonSerializer.Serialize(verifyResponse))
+                };
+                yield break;
+            }
+        }
+
+        yield return new StreamUpdate
+        {
+            Type = StreamUpdateType.Complete,
+            IsComplete = true,
+            FinalResult = SolutionResult.Fail("Failed to find suspect")
         };
     }
 }
@@ -115,14 +155,6 @@ public class PowerPlant
 {
     [JsonPropertyName("code")]
     public string? Code { get; set; }
-}
-
-public class PowerPlantLocation
-{
-    public string City { get; set; } = string.Empty;
-    public string Code { get; set; } = string.Empty;
-    public double Lat { get; set; }
-    public double Lon { get; set; }
 }
 
 public class SuspectAnswer

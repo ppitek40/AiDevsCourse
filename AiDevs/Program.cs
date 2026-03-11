@@ -11,6 +11,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 // Register HttpClient for OpenRouter and general use
 builder.Services.AddHttpClient<IOpenRouterService, OpenRouterService>();
 builder.Services.AddHttpClient<IAiDevsApiService, AiDevsApiService>();
@@ -37,6 +48,7 @@ app.MapOpenApi();
 app.MapScalarApiReference();
 
 app.UseHttpsRedirection();
+app.UseCors("AllowLocalhost");
 app.UseAuthorization();
 app.MapControllers();
 
