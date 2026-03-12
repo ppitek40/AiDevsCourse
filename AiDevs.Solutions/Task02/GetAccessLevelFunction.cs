@@ -6,21 +6,19 @@ using AiDevs.Infrastructure.Services;
 namespace AiDevs.Solutions.Task02;
 
 [FunctionDefinition("get_access_level", "Get the access level for a person based on their name and birth year")]
-public class GetAccessLevelFunction : IFunctionHandler<GetAccessLevelParameters>
+public class GetAccessLevelFunction(IAiDevsApiService aiDevsApiService) : IFunctionHandler
 {
-    private readonly IAiDevsApiService _aiDevsApiService;
+    public Type ParametersType => typeof(GetAccessLevelParameters);
 
-    public GetAccessLevelFunction(IAiDevsApiService aiDevsApiService)
+    public async Task<string> ExecuteAsync(object parameters, CancellationToken cancellationToken = default)
     {
-        _aiDevsApiService = aiDevsApiService;
-    }
+        if (parameters is not GetAccessLevelParameters p)
+            return "Invalid parameters type";
 
-    public async Task<string> ExecuteAsync(GetAccessLevelParameters parameters, CancellationToken cancellationToken = default)
-    {
-        var accessLevel = await _aiDevsApiService.GetAccessLevelAsync(
-            parameters.Name,
-            parameters.Surname,
-            parameters.BirthYear,
+        var accessLevel = await aiDevsApiService.GetAccessLevelAsync(
+            p.Name,
+            p.Surname,
+            p.BirthYear,
             cancellationToken);
 
         return JsonSerializer.Serialize(new { accessLevel });

@@ -1,23 +1,18 @@
 using AiDevs.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using AiDevs.Core.Services;
+using AiDevs.Infrastructure.Services;
 
 namespace AiDevs.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SolutionsController : ControllerBase
+public class SolutionsController(
+    IEnumerable<ITaskSolution> solutions,
+    ILogger<SolutionsController> logger,
+    IAiDevsApiService aiDevsApiService)
+    : ControllerBase
 {
-    private readonly IEnumerable<ITaskSolution> _solutions;
-    private readonly ILogger<SolutionsController> _logger;
-
-    public SolutionsController(
-        IEnumerable<ITaskSolution> solutions,
-        ILogger<SolutionsController> logger)
-    {
-        _solutions = solutions;
-        _logger = logger;
-    }
-
     /// <summary>
     /// Execute a specific task solution with streaming
     /// </summary>
@@ -29,12 +24,12 @@ public class SolutionsController : ControllerBase
         int taskId,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Executing solution for Task {TaskId} with streaming", taskId);
+        logger.LogInformation("Executing solution for Task {TaskId} with streaming", taskId);
 
-        var solution = _solutions.FirstOrDefault(s => s.TaskId == taskId);
+        var solution = solutions.FirstOrDefault(s => s.TaskId == taskId);
         if (solution == null)
         {
-            _logger.LogWarning("Solution for Task {TaskId} not found", taskId);
+            logger.LogWarning("Solution for Task {TaskId} not found", taskId);
             Response.StatusCode = 404;
             await Response.WriteAsync($"{{\"error\": \"Solution for Task {taskId} not found\"}}", cancellationToken);
             return;
@@ -55,11 +50,11 @@ public class SolutionsController : ControllerBase
                 await Response.Body.FlushAsync(cancellationToken);
             }
 
-            _logger.LogInformation("Task {TaskId} streaming completed", taskId);
+            logger.LogInformation("Task {TaskId} streaming completed", taskId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception while streaming Task {TaskId}", taskId);
+            logger.LogError(ex, "Unhandled exception while streaming Task {TaskId}", taskId);
             var errorUpdate = new { type = "error", error = ex.Message };
             var json = System.Text.Json.JsonSerializer.Serialize(errorUpdate);
             await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
@@ -70,16 +65,37 @@ public class SolutionsController : ControllerBase
     /// <summary>
     /// Get list of all available task solutions
     /// </summary>
-    /// <returns>List of task IDs</returns>
+    /// <returns>List of task IDs with their status</returns>
     [HttpGet]
-    public IActionResult GetAvailableSolutions()
+    public async Task<IActionResult> GetAvailableSolutions()
     {
-        var taskIds = _solutions.Select(s => new
-        {
-            taskId = s.TaskId,
-            type = s.GetType().Name
-        }).OrderBy(x => x.taskId);
+        const int totalTasks = 25;
+        var startDate = new DateTime(2026, 3, 9); // March 9, 2026
+        var today = DateTime.Today;
 
-        return Ok(new { tasks = taskIds });
+        // Fetch completed tasks from the API
+        var stats = await aiDevsApiService.GetStatsAsync();
+        var completedTaskIds = new HashSet<int>(stats.Days.Select(int.Parse));
+        var workingDaysList = DateService.GetNWorkingDaysFrom(startDate, totalTasks);
+
+        var tasks = new List<object>();
+
+        for (var i = 0; i < totalTasks; i++)
+        {
+            if (completedTaskIds.Contains(i + 1))
+            {
+                tasks.Add(new { taskId = i + 1, status = "Completed" });
+                continue;
+            }
+            // Determine status
+            if (workingDaysList[i] > today)
+            {
+                tasks.Add(new { taskId = i + 1, status = "NotPublished" });
+                continue;
+            }
+            tasks.Add(new { taskId = i + 1, status = "NotCompleted" });
+        }
+
+        return Ok(new { tasks });
     }
 }

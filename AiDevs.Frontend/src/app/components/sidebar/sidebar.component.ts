@@ -1,5 +1,6 @@
-import { Component, ChangeDetectionStrategy, inject, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, output, OnInit } from '@angular/core';
 import { TaskService } from '../../services/task.service';
+import { TaskStatus } from '../../models/task.model';
 
 @Component({
   selector: 'app-sidebar',
@@ -19,10 +20,9 @@ import { TaskService } from '../../services/task.service';
                 type="button"
                 class="task-item"
                 [class.active]="selectedTaskId === task.id"
-                [class.pending]="task.status === 'pending'"
-                [class.running]="task.status === 'running'"
-                [class.completed]="task.status === 'completed'"
-                [class.error]="task.status === 'error'"
+                [class.completed]="task.status === TaskStatus.Completed"
+                [class.not-completed]="task.status === TaskStatus.NotCompleted"
+                [class.not-published]="task.status === TaskStatus.NotPublished"
                 (click)="selectTask(task.id)"
                 [attr.aria-current]="selectedTaskId === task.id ? 'page' : null"
               >
@@ -115,21 +115,17 @@ import { TaskService } from '../../services/task.service';
       background: #4b5563;
     }
 
-    .task-item.pending .task-status {
+    .task-item.not-published .task-status {
       background: #6b7280;
     }
 
-    .task-item.running .task-status {
+    .task-item.not-completed .task-status {
       background: #fbbf24;
       animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 
     .task-item.completed .task-status {
       background: #00ff88;
-    }
-
-    .task-item.error .task-status {
-      background: #ef4444;
     }
 
     @keyframes pulse {
@@ -160,15 +156,21 @@ import { TaskService } from '../../services/task.service';
     }
   `]
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   protected readonly taskService = inject(TaskService);
 
   readonly taskSelected = output<number>();
 
   protected selectedTaskId: number | null = null;
 
+  ngOnInit(): void {
+    this.taskService.loadTasks();
+  }
+
   protected selectTask(taskId: number): void {
     this.selectedTaskId = taskId;
     this.taskSelected.emit(taskId);
   }
+
+  protected readonly TaskStatus = TaskStatus;
 }

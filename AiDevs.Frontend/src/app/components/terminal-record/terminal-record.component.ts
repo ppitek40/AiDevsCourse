@@ -15,7 +15,14 @@ import { AgentOutput, StreamUpdateType } from '../../models/agent-output.model';
           @case (StreamUpdateType.LLMToken) {
             <div class="llm-token-row">
               <span class="type-badge llm">LLM</span>
-              <span class="content">{{ output().streamUpdate!.content }}</span>
+              @if (isJsonCodeBlock(output().streamUpdate!.content)) {
+                <details class="tool-details" open>
+                  <summary>JSON</summary>
+                  <pre class="tool-output">{{ extractJsonContent(output().streamUpdate!.content) }}</pre>
+                </details>
+              } @else {
+                <span class="content">{{ output().streamUpdate!.content }}</span>
+              }
             </div>
           }
           @case (StreamUpdateType.ToolCall) {
@@ -341,5 +348,20 @@ export class TerminalRecordComponent {
       default:
         return '';
     }
+  }
+
+  protected isJsonCodeBlock(content: string | undefined): boolean {
+    if (!content) return false;
+    const trimmed = content.trim();
+    return trimmed.startsWith('```json') && trimmed.endsWith('```');
+  }
+
+  protected extractJsonContent(content: string | undefined): string {
+    if (!content) return '';
+    const trimmed = content.trim();
+    if (trimmed.startsWith('```json') && trimmed.endsWith('```')) {
+      return trimmed.slice(7, -3).trim();
+    }
+    return content;
   }
 }

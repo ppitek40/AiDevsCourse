@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy, signal, inject, OnInit } from '@angular/core';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TerminalViewComponent } from '../../components/terminal-view/terminal-view.component';
-import { DemoService } from '../../services/demo.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -29,15 +28,8 @@ import { DemoService } from '../../services/demo.service';
     }
   `]
 })
-export class DashboardComponent implements OnInit {
-  private readonly demoService = inject(DemoService);
-
+export class DashboardComponent {
   protected readonly selectedTaskId = signal<number | null>(null);
-
-  ngOnInit(): void {
-    // Load demo data
-    this.demoService.loadDemoData();
-  }
 
   protected onTaskSelected(taskId: number): void {
     this.selectedTaskId.set(taskId);

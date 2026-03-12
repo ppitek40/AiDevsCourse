@@ -27,8 +27,8 @@ builder.Services.AddHttpClient<IOpenRouterService, OpenRouterService>();
 builder.Services.AddHttpClient<IAiDevsApiService, AiDevsApiService>();
 builder.Services.AddHttpClient();
 
-// Register agent session service
 builder.Services.AddTransient<IAgentSessionService, AgentSessionService>();
+builder.Services.AddTransient<IToolsService, ToolsService>();
 
 // Register function handlers for Task02
 builder.Services.AddTransient<GetPersonLocationsFunction>();

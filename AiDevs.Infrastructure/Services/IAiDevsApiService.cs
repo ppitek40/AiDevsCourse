@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using AiDevs.Core.Models;
 
 namespace AiDevs.Infrastructure.Services;
 
@@ -20,7 +21,9 @@ public interface IAiDevsApiService
     /// <summary>
     /// Submit answer to verify endpoint
     /// </summary>
-    Task<string> VerifyAsync(string task, object answer, CancellationToken cancellationToken = default);
+    Task<SolutionResult> VerifyAsync(string task, object answer, CancellationToken cancellationToken = default);
+
+    Task<AiDevsApiService.StatsResponse> GetStatsAsync(CancellationToken cancellationToken = default);
 }
 
 public class Coordinate

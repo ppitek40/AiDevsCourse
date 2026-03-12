@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AiDevs.Core.Models;
 using Microsoft.Extensions.Configuration;
 
 namespace AiDevs.Infrastructure.Services;
@@ -9,7 +10,7 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
 {
     private readonly string _apiKey = configuration["AiDevs:ApiKey"]
         ?? throw new InvalidOperationException("AiDevs API key not configured");
-    private const string BaseUrl = "https://hub.ag3nts.org/api";
+    private const string BaseUrl = "https://hub.ag3nts.org";
 
     public async Task<List<Coordinate>> GetLocationAsync(string name, string surname, CancellationToken cancellationToken = default)
     {
@@ -23,7 +24,7 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await httpClient.PostAsync($"{BaseUrl}/location", content, cancellationToken);
+        var response = await httpClient.PostAsync($"{BaseUrl}/api/location", content, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -45,7 +46,7 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await httpClient.PostAsync($"{BaseUrl}/accesslevel", content, cancellationToken);
+        var response = await httpClient.PostAsync($"{BaseUrl}/api/accesslevel", content, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -54,7 +55,7 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
         return accessResponse?.AccessLevel ?? 0;
     }
 
-    public async Task<string> VerifyAsync(string task, object answer, CancellationToken cancellationToken = default)
+    public async Task<SolutionResult> VerifyAsync(string task, object answer, CancellationToken cancellationToken = default)
     {
         var payload = new
         {
@@ -66,11 +67,35 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await httpClient.PostAsync($"{BaseUrl}/../verify", content, cancellationToken);
+        try
+        {
+            var response = await httpClient.PostAsync($"{BaseUrl}/verify", content, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadAsStringAsync(cancellationToken);
+            return SolutionResult.Ok(result);
+        }
+        catch (Exception e)
+        {
+            return SolutionResult.Fail(e.Message);
+        }
+    }
+
+    public async Task<StatsResponse> GetStatsAsync(CancellationToken cancellationToken = default)
+    {
+        var formData = new MultipartFormDataContent
+        {
+            { new StringContent(_apiKey), "key" }
+        };
+
+        var response = await httpClient.PostAsync($"{BaseUrl}/stats", formData, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadAsStringAsync(cancellationToken);
+        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
+        var statsResponse = JsonSerializer.Deserialize<StatsResponse>(responseJson);
+
+        return statsResponse;
     }
+
     private class AccessLevelResponse
     {
         [JsonPropertyName("name")]
@@ -79,5 +104,11 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
         public required string Surname { get; init; }
         [JsonPropertyName("accessLevel")]
         public required int AccessLevel { get; init; }
+    }
+
+    public class StatsResponse
+    {
+        [JsonPropertyName("days")]
+        public required List<string> Days { get; init; }
     }
 }

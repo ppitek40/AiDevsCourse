@@ -1,6 +1,7 @@
 namespace AiDevs.Infrastructure.FunctionCalling;
 
-public interface IFunctionHandler<TParameters>
+public interface IFunctionHandler
 {
-    Task<string> ExecuteAsync(TParameters parameters, CancellationToken cancellationToken = default);
+    Type ParametersType { get; }
+    Task<string> ExecuteAsync(object parameters, CancellationToken cancellationToken = default);
 }

@@ -6,18 +6,11 @@ using Microsoft.Extensions.Configuration;
 
 namespace AiDevs.Infrastructure.Services;
 
-public class OpenRouterService : IOpenRouterService
+public class OpenRouterService(HttpClient httpClient, IConfiguration configuration) : IOpenRouterService
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
+    private readonly string _apiKey = configuration["OpenRouter:ApiKey"]
+        ?? throw new InvalidOperationException("OpenRouter API key not configured");
     private const string BaseUrl = "https://openrouter.ai/api/v1/chat/completions";
-
-    public OpenRouterService(HttpClient httpClient, IConfiguration configuration)
-    {
-        _httpClient = httpClient;
-        _apiKey = configuration["OpenRouter:ApiKey"]
-            ?? throw new InvalidOperationException("OpenRouter API key not configured");
-    }
 
     public async IAsyncEnumerable<string> StreamChatAsync(
         List<OpenRouterMessage> messages,
@@ -85,7 +78,7 @@ public class OpenRouterService : IOpenRouterService
 
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
 
-        using var response = await _httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        using var response = await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);

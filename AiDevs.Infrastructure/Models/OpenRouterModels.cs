@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using AiDevs.Infrastructure.FunctionCalling;
 
 namespace AiDevs.Infrastructure.Models;
 
@@ -81,6 +82,9 @@ public class OpenRouterTool
 
     [JsonPropertyName("function")]
     public OpenRouterFunction Function { get; set; } = new();
+    
+    [JsonIgnore]
+    public IFunctionHandler Handler { get; set; }
 }
 
 public class OpenRouterFunction

@@ -116,7 +116,7 @@ public class Task01Solution(IOpenRouterService openRouterService, IAiDevsApiServ
         {
             Type = StreamUpdateType.Complete,
             IsComplete = true,
-            FinalResult = SolutionResult.Ok(result, new Dictionary<string, object>
+            FinalResult = result.AddMetadata(new Dictionary<string, object>
             {
                 { "totalPeople", people.Count },
                 { "filteredByBasicCriteria", filteredPeople.Count },

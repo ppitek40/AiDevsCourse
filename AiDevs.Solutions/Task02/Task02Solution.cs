@@ -8,36 +8,20 @@ using AiDevs.Infrastructure.Services;
 
 namespace AiDevs.Solutions.Task02;
 
-public class Task02Solution : ITaskSolution
+public class Task02Solution(IAgentSessionService agentSessionService, IAiDevsApiService aiDevsApiService)
+    : ITaskSolution
 {
-    private readonly IAgentSessionService _agentSessionService;
-    private readonly IAiDevsApiService _aiDevsApiService;
-
-    public Task02Solution(IAgentSessionService agentSessionService, IAiDevsApiService aiDevsApiService)
-    {
-        _agentSessionService = agentSessionService;
-        _aiDevsApiService = aiDevsApiService;
-    }
-
     public int TaskId => 2;
 
     public async IAsyncEnumerable<StreamUpdate> ExecuteStreamAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         // Load suspects from Task01
-        yield return new StreamUpdate
-        {
-            Type = StreamUpdateType.Status,
-            Content = "Loading suspects data..."
-        };
+        yield return StreamUpdate.Status("Loading suspects data...");
 
         var suspectsJson = await File.ReadAllTextAsync("../AiDevs.Solutions/Task01/result.json", cancellationToken);
 
         // Load power plants
-        yield return new StreamUpdate
-        {
-            Type = StreamUpdateType.Status,
-            Content = "Loading power plants data..."
-        };
+        yield return StreamUpdate.Status("Loading power plants data...");
 
         var powerPlantsJson = await File.ReadAllTextAsync("../AiDevs.Solutions/Task02/findhim_locations.json", cancellationToken);
 
@@ -73,15 +57,11 @@ Power Plants (with coordinates):
             new() { Role = "user", Content = "Find the suspect who visited a power plant. Check each person's locations and match them with power plant coordinates." }
         };
 
-        yield return new StreamUpdate
-        {
-            Type = StreamUpdateType.Status,
-            Content = "Starting agent session..."
-        };
+        yield return StreamUpdate.Status("Starting agent session...");
 
         // Execute agent session with function handlers
         string? answer = null;
-        await foreach (var update in _agentSessionService.ExecuteAgentSessionStreamAsync(
+        await foreach (var update in agentSessionService.ExecuteAgentSessionStreamAsync(
             messages,
             [typeof(GetPersonLocationsFunction), typeof(GetAccessLevelFunction)],
             model: OpenRouterModel.Claude35Sonnet,
@@ -92,69 +72,25 @@ Power Plants (with coordinates):
             yield return update;
 
             if (update.IsComplete && update.FinalResult?.Success == true)
-            {
                 answer = update.FinalResult.Output;
-            }
         }
 
         if (answer != null)
         {
-            yield return new StreamUpdate
-            {
-                Type = StreamUpdateType.Status,
-                Content = "Verifying answer..."
-            };
+            yield return StreamUpdate.Status("Verifying answer...");
 
             // Submit to verify
             var answerObj = JsonSerializer.Deserialize<SuspectAnswer>(answer);
             if (answerObj != null)
             {
-                var verifyResponse = await _aiDevsApiService.VerifyAsync("findhim", answerObj, cancellationToken);
-
-                yield return new StreamUpdate
-                {
-                    Type = StreamUpdateType.Complete,
-                    IsComplete = true,
-                    FinalResult = SolutionResult.Ok(JsonSerializer.Serialize(verifyResponse))
-                };
+                var verifyResponse = await aiDevsApiService.VerifyAsync("findhim", answerObj, cancellationToken);
+                yield return StreamUpdate.Complete(verifyResponse);
                 yield break;
             }
         }
 
-        yield return new StreamUpdate
-        {
-            Type = StreamUpdateType.Complete,
-            IsComplete = true,
-            FinalResult = SolutionResult.Fail("Failed to find suspect")
-        };
+        yield return StreamUpdate.Complete(SolutionResult.Fail("Failed to find suspect"));
     }
-}
-
-public class Person
-{
-    [JsonPropertyName("Name")]
-    public string Name { get; set; } = string.Empty;
-
-    [JsonPropertyName("Surname")]
-    public string Surname { get; set; } = string.Empty;
-
-    [JsonPropertyName("BirthYear")]
-    public int BirthYear { get; set; }
-
-    [JsonPropertyName("BirthPlace")]
-    public string? BirthPlace { get; set; }
-}
-
-public class PowerPlantsData
-{
-    [JsonPropertyName("power_plants")]
-    public Dictionary<string, PowerPlant>? PowerPlants { get; set; }
-}
-
-public class PowerPlant
-{
-    [JsonPropertyName("code")]
-    public string? Code { get; set; }
 }
 
 public class SuspectAnswer

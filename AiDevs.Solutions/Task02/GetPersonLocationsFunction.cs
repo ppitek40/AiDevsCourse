@@ -6,20 +6,18 @@ using AiDevs.Infrastructure.Services;
 namespace AiDevs.Solutions.Task02;
 
 [FunctionDefinition("get_person_locations", "Get the list of coordinates where a person was seen")]
-public class GetPersonLocationsFunction : IFunctionHandler<GetPersonLocationsParameters>
+public class GetPersonLocationsFunction(IAiDevsApiService aiDevsApiService) : IFunctionHandler
 {
-    private readonly IAiDevsApiService _aiDevsApiService;
+    public Type ParametersType => typeof(GetPersonLocationsParameters);
 
-    public GetPersonLocationsFunction(IAiDevsApiService aiDevsApiService)
+    public async Task<string> ExecuteAsync(object parameters, CancellationToken cancellationToken = default)
     {
-        _aiDevsApiService = aiDevsApiService;
-    }
+        if (parameters is not GetPersonLocationsParameters p)
+            return "Invalid parameters type";
 
-    public async Task<string> ExecuteAsync(GetPersonLocationsParameters parameters, CancellationToken cancellationToken = default)
-    {
-        var locations = await _aiDevsApiService.GetLocationAsync(
-            parameters.Name,
-            parameters.Surname,
+        var locations = await aiDevsApiService.GetLocationAsync(
+            p.Name,
+            p.Surname,
             cancellationToken);
 
         return JsonSerializer.Serialize(locations);
