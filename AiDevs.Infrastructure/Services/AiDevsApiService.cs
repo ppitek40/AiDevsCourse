@@ -96,6 +96,44 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
         return statsResponse;
     }
 
+    public async Task<string> CheckPackageAsync(string packageId, CancellationToken cancellationToken = default)
+    {
+        var payload = new
+        {
+            apikey = _apiKey,
+            action = "check",
+            packageid = packageId
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await httpClient.PostAsync($"{BaseUrl}/api/packages", content, cancellationToken);
+        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        return responseContent;
+    }
+
+    public async Task<string> RedirectPackageAsync(string packageId, string destination, string code, CancellationToken cancellationToken = default)
+    {
+        var payload = new
+        {
+            apikey = _apiKey,
+            action = "redirect",
+            packageid = packageId,
+            destination,
+            code
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await httpClient.PostAsync($"{BaseUrl}/api/packages", content, cancellationToken);
+        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        return responseContent;
+    }
+
     private class AccessLevelResponse
     {
         [JsonPropertyName("name")]

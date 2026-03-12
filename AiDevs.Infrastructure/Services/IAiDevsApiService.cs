@@ -24,6 +24,16 @@ public interface IAiDevsApiService
     Task<SolutionResult> VerifyAsync(string task, object answer, CancellationToken cancellationToken = default);
 
     Task<AiDevsApiService.StatsResponse> GetStatsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Check package status and location
+    /// </summary>
+    Task<string> CheckPackageAsync(string packageId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Redirect a package to a new destination
+    /// </summary>
+    Task<string> RedirectPackageAsync(string packageId, string destination, string code, CancellationToken cancellationToken = default);
 }
 
 public class Coordinate
