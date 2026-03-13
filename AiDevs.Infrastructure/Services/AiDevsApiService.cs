@@ -70,9 +70,10 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
         try
         {
             var response = await httpClient.PostAsync($"{BaseUrl}/verify", content, cancellationToken);
-            response.EnsureSuccessStatusCode();
             var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return SolutionResult.Ok(result);
+            return !response.IsSuccessStatusCode 
+                ? SolutionResult.Fail($"HTTP {response.StatusCode}: {result}") 
+                : SolutionResult.Ok(result);
         }
         catch (Exception e)
         {

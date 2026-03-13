@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AiDevs.Infrastructure.Models;
 using Microsoft.Extensions.Configuration;
 
@@ -13,7 +14,7 @@ public class OpenRouterService(HttpClient httpClient, IConfiguration configurati
     private const string BaseUrl = "https://openrouter.ai/api/v1/chat/completions";
 
     public async IAsyncEnumerable<string> StreamChatAsync(
-        List<OpenRouterMessage> messages,
+        List<IOpenRouterMessage> messages,
         OpenRouterModel model = OpenRouterModel.Gpt4o,
         double temperature = 0.7,
         int? maxTokens = null,
@@ -39,7 +40,7 @@ public class OpenRouterService(HttpClient httpClient, IConfiguration configurati
     }
 
     public async IAsyncEnumerable<OpenRouterStreamChunk> StreamChatWithToolsAsync(
-        List<OpenRouterMessage> messages,
+        List<IOpenRouterMessage> messages,
         List<OpenRouterTool>? tools = null,
         object? toolChoice = null,
         OpenRouterModel model = OpenRouterModel.Gpt4o,
@@ -68,7 +69,7 @@ public class OpenRouterService(HttpClient httpClient, IConfiguration configurati
         OpenRouterRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var json = JsonSerializer.Serialize(request);
+        var json = JsonSerializer.Serialize(request, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var httpRequest = new HttpRequestMessage(HttpMethod.Post, BaseUrl)

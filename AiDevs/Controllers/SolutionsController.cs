@@ -1,7 +1,9 @@
+using System.Text.Json;
 using AiDevs.Core.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using AiDevs.Core.Services;
+using AiDevs.Infrastructure.Models;
 using AiDevs.Infrastructure.Services;
+using AiDevs.Tools;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AiDevs.Controllers;
 
@@ -10,7 +12,9 @@ namespace AiDevs.Controllers;
 public class SolutionsController(
     IEnumerable<ITaskSolution> solutions,
     ILogger<SolutionsController> logger,
-    IAiDevsApiService aiDevsApiService)
+    IAiDevsApiService aiDevsApiService,
+    ILlmExecutionService llmExecutionService,
+    IAgentSessionService agentSessionService)
     : ControllerBase
 {
     /// <summary>
@@ -45,18 +49,21 @@ public class SolutionsController(
         {
             await foreach (var update in solution.ExecuteStreamAsync(cancellationToken))
             {
-                var json = System.Text.Json.JsonSerializer.Serialize(update);
+                var json = JsonSerializer.Serialize(update);
                 await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
                 await Response.Body.FlushAsync(cancellationToken);
             }
 
             logger.LogInformation("Task {TaskId} streaming completed", taskId);
         }
+        catch (OperationCanceledException)
+        {
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled exception while streaming Task {TaskId}", taskId);
             var errorUpdate = new { type = "error", error = ex.Message };
-            var json = System.Text.Json.JsonSerializer.Serialize(errorUpdate);
+            var json = JsonSerializer.Serialize(errorUpdate);
             await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
         }
@@ -87,15 +94,64 @@ public class SolutionsController(
                 tasks.Add(new { taskId = i + 1, status = "Completed" });
                 continue;
             }
+
             // Determine status
             if (workingDaysList[i] > today)
             {
                 tasks.Add(new { taskId = i + 1, status = "NotPublished" });
                 continue;
             }
+
             tasks.Add(new { taskId = i + 1, status = "NotCompleted" });
         }
 
         return Ok(new { tasks });
     }
+
+    /// <summary>
+    /// Execute a custom LLM call with specified model, tools, and parameters
+    /// </summary>
+    [HttpPost("custom-llm")]
+    public async Task CustomLlmCall(
+        [FromBody] CustomLlmRequest request,
+        CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Executing custom LLM call with model {Model}", request.Model);
+
+        // Set headers for Server-Sent Events
+        Response.ContentType = "text/event-stream";
+        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("Connection", "keep-alive");
+        Response.Headers.Append("X-Accel-Buffering", "no");
+
+
+        var messages = new List<OpenRouterMessage>();
+        if (!string.IsNullOrEmpty(request.SystemMessage))
+            messages.Add(new OpenRouterMessage { Role = "system", Content = request.SystemMessage });
+
+        messages.Add(new OpenRouterMessage { Role = "user", Content = request.UserMessage });
+
+        await foreach (var update in agentSessionService.ExecuteAgentSessionStreamAsync(
+            messages,
+            request.ToolTypes ?? [],
+            request.Model,
+            request.Temperature,
+            request.Iterations,
+            cancellationToken))
+        {
+            var json = JsonSerializer.Serialize(update);
+            await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
+        }
+    }
+}
+
+public class CustomLlmRequest
+{
+    public OpenRouterModel Model { get; set; } = OpenRouterModel.Gpt4o;
+    public List<Type>? ToolTypes { get; set; }
+    public string? SystemMessage { get; set; }
+    public string UserMessage { get; set; } = string.Empty;
+    public double Temperature { get; set; } = 0.7;
+    public int Iterations { get; set; } = 1;
 }

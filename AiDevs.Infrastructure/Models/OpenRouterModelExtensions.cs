@@ -9,6 +9,7 @@ public enum OpenRouterModel
     Claude37Sonnet,
     Gemini25Flash,
     Gemini25Pro,
+    Gemini3FlashPreview,
     DeepSeekChat
 }
 
@@ -23,6 +24,7 @@ public static class OpenRouterModelExtensions
         OpenRouterModel.Claude37Sonnet => "anthropic/claude-3.7-sonnet",
         OpenRouterModel.Gemini25Flash => "google/gemini-2.5-flash",
         OpenRouterModel.Gemini25Pro => "google/gemini-2.5-pro",
+        OpenRouterModel.Gemini3FlashPreview => "google/gemini-3-flash-preview",
         OpenRouterModel.DeepSeekChat => "deepseek/deepseek-chat",
         _ => throw new ArgumentOutOfRangeException(nameof(model), model, null)
     };

@@ -11,7 +11,7 @@ public interface IOpenRouterService
     /// Stream chat responses
     /// </summary>
     IAsyncEnumerable<string> StreamChatAsync(
-        List<OpenRouterMessage> messages,
+        List<IOpenRouterMessage> messages,
         OpenRouterModel model = OpenRouterModel.Gpt4o,
         double temperature = 0.7,
         int? maxTokens = null,
@@ -21,7 +21,7 @@ public interface IOpenRouterService
     /// Stream chat responses with function calling support
     /// </summary>
     IAsyncEnumerable<OpenRouterStreamChunk> StreamChatWithToolsAsync(
-        List<OpenRouterMessage> messages,
+        List<IOpenRouterMessage> messages,
         List<OpenRouterTool>? tools = null,
         object? toolChoice = null,
         OpenRouterModel model = OpenRouterModel.Gpt4o,

@@ -3,6 +3,7 @@ using AiDevs.Infrastructure.Services;
 using AiDevs.Solutions.Task01;
 using AiDevs.Solutions.Task02;
 using AiDevs.Solutions.Task03;
+using AiDevs.Solutions.Task04;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddTransient<IAgentSessionService, AgentSessionService>();
 builder.Services.AddTransient<IToolsService, ToolsService>();
+builder.Services.AddTransient<ILlmExecutionService, LlmExecutionService>();
 
 // Register Task03 services
 builder.Services.AddSingleton<IConversationMemoryService, ConversationMemoryService>();
@@ -43,10 +45,14 @@ builder.Services.AddTransient<GetAccessLevelFunction>();
 builder.Services.AddTransient<CheckPackageFunction>();
 builder.Services.AddTransient<RedirectPackageFunction>();
 
+// Register function handlers for Task04
+builder.Services.AddTransient<FetchDocumentFunction>();
+
 // Register all task solutions
 builder.Services.AddTransient<ITaskSolution, Task01Solution>();
 builder.Services.AddTransient<ITaskSolution, Task02Solution>();
 builder.Services.AddTransient<ITaskSolution, Task03Solution>();
+builder.Services.AddTransient<ITaskSolution, Task04Solution>();
 // Add more task solutions here as you implement them:
 // ... etc
 

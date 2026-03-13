@@ -37,7 +37,9 @@ public class ToolsService(IServiceProvider serviceProvider) : IToolsService
     {
         foreach (var toolCall in toolCalls)
         {
-            if (!currentToolCall.TryGetValue(0, out var value))
+            var index = toolCall.Index ?? 0;
+
+            if (!currentToolCall.TryGetValue(index, out var value))
             {
                 value = new ToolCallBuilder
                 {
@@ -45,7 +47,7 @@ public class ToolsService(IServiceProvider serviceProvider) : IToolsService
                     Name = toolCall.Function?.Name ?? "",
                     Arguments = new StringBuilder()
                 };
-                currentToolCall[0] = value;
+                currentToolCall[index] = value;
             }
 
             if (!string.IsNullOrEmpty(toolCall.Function?.Arguments))
@@ -59,9 +61,23 @@ public class ToolsService(IServiceProvider serviceProvider) : IToolsService
         }
     }
 
-    public Task<string> ExecuteToolAsync(IFunctionHandler handler, string argumentsJson, CancellationToken cancellationToken)
+    public Task<string> ExecuteToolAsync(
+        IFunctionHandler handler,
+        string argumentsJson,
+        CancellationToken cancellationToken)
     {
-        var parameters = JsonSerializer.Deserialize(argumentsJson, handler.ParametersType);
+        object? parameters;
+        try
+        {
+            parameters = JsonSerializer.Deserialize(argumentsJson, handler.ParametersType);
+        }
+        catch (JsonException ex)
+        {
+            return Task.FromResult(
+                $"Failed to deserialize arguments for function: {handler.GetType().Name} ({ex.Message})." +
+                $"Read the function definition in the tool description.");
+        }
+
         if (parameters == null)
             return Task.FromResult($"Failed to deserialize arguments for function: {handler.GetType().Name}");
 

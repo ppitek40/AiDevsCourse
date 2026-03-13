@@ -1,4 +1,4 @@
-﻿namespace AiDevs.Core.Services;
+﻿namespace AiDevs.Tools;
 
 public class DateService
 {

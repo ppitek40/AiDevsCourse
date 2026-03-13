@@ -18,7 +18,7 @@ public class AgentSessionService(IOpenRouterService openRouterService, IServiceP
     {
         var tools = toolsService.GetTools(handlerTypes);
 
-        var messages = new List<OpenRouterMessage>(initialMessages);
+        var messages = new List<IOpenRouterMessage>(initialMessages);
 
         for (var i =0; i < maxIterations; i++)
         {

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AiDevs.Core\AiDevs.Core.csproj" />
     <ProjectReference Include="..\AiDevs.Infrastructure\AiDevs.Infrastructure.csproj" />
+    <ProjectReference Include="..\AiDevs.Tools\AiDevs.Tools.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,11 +1,18 @@
-﻿using AiDevs.Core.Models;
+﻿using System.Runtime.CompilerServices;
+using System.Threading.Channels;
+using AiDevs.Core.Models;
 
 namespace AiDevs.Infrastructure.Services;
 
 public interface IProxyEventAggregator
 {
+    void Init();
     void Publish(StreamUpdate proxyEvent);
-    IAsyncEnumerable<StreamUpdate> Subscribe(string sessionId);
+
+    IAsyncEnumerable<StreamUpdate> Subscribe(
+        string sessionId,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default);
+
     void CompleteSession(string sessionId);
 }
 
@@ -13,17 +20,22 @@ public class ProxyEventAggregator : IProxyEventAggregator
 {
     private EventChannel _channel = new();
 
-    public void Publish(StreamUpdate proxyEvent)
+    public void Init()
     {
-            _channel.Writer.TryWrite(proxyEvent);
+        _channel = new EventChannel();
     }
 
-    public async IAsyncEnumerable<StreamUpdate> Subscribe(string sessionId)
+    public void Publish(StreamUpdate proxyEvent)
     {
-        await foreach (var evt in _channel.Reader.ReadAllAsync())
-        {
+        _channel.Writer.TryWrite(proxyEvent);
+    }
+
+    public async IAsyncEnumerable<StreamUpdate> Subscribe(
+        string sessionId,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await foreach (var evt in _channel.Reader.ReadAllAsync(cancellationToken))
             yield return evt;
-        }
     }
 
     public void CompleteSession(string sessionId)
@@ -33,14 +45,14 @@ public class ProxyEventAggregator : IProxyEventAggregator
 
     private class EventChannel
     {
-        private readonly System.Threading.Channels.Channel<StreamUpdate> _channel;
+        private readonly Channel<StreamUpdate> _channel;
 
         public EventChannel()
         {
-            _channel = System.Threading.Channels.Channel.CreateUnbounded<StreamUpdate>();
+            _channel = Channel.CreateUnbounded<StreamUpdate>();
         }
 
-        public System.Threading.Channels.ChannelWriter<StreamUpdate> Writer => _channel.Writer;
-        public System.Threading.Channels.ChannelReader<StreamUpdate> Reader => _channel.Reader;
+        public ChannelWriter<StreamUpdate> Writer => _channel.Writer;
+        public ChannelReader<StreamUpdate> Reader => _channel.Reader;
     }
 }

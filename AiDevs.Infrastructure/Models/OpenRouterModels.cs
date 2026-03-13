@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using AiDevs.Infrastructure.FunctionCalling;
 
@@ -9,7 +10,7 @@ public class OpenRouterRequest
     public string Model { get; set; } = "openai/gpt-4";
 
     [JsonPropertyName("messages")]
-    public List<OpenRouterMessage> Messages { get; set; } = new();
+    public List<IOpenRouterMessage> Messages { get; set; } = new();
 
     [JsonPropertyName("temperature")]
     public double Temperature { get; set; } = 0.7;
@@ -27,7 +28,62 @@ public class OpenRouterRequest
     public bool Stream { get; set; }
 }
 
-public class OpenRouterMessage
+[JsonConverter(typeof(JsonPolymorphicConverter))]
+public interface IOpenRouterMessage
+{
+    string Role { get; set; }
+    List<OpenRouterToolCall>? ToolCalls { get; set; }
+    string? ToolCallId { get; set; }
+}
+
+public class JsonPolymorphicConverter : JsonConverter<IOpenRouterMessage>
+{
+    public override IOpenRouterMessage? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override void Write(Utf8JsonWriter writer, IOpenRouterMessage value, JsonSerializerOptions options)
+    {
+        if (value is MultiModalOpenRouterMessage modal)
+            JsonSerializer.Serialize(writer, modal, options);
+        else if (value is OpenRouterMessage msg)
+            JsonSerializer.Serialize(writer, msg, options);
+        else
+            throw new NotSupportedException($"Unsupported message type: {value.GetType().Name}");
+    }
+}
+
+public class MultiModalOpenRouterMessage : IOpenRouterMessage
+{
+    [JsonPropertyName("role")]
+    public string Role { get; set; }
+    [JsonPropertyName("content")]
+    public MultiModalContent[] Content { get; set; }
+    [JsonPropertyName("tool_calls")]
+    public List<OpenRouterToolCall>? ToolCalls { get; set; }
+    [JsonPropertyName("tool_call_id")]
+    public string? ToolCallId { get; set; }
+}
+
+public class MultiModalContent
+{
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "image_url";
+
+    [JsonPropertyName("image_url")]
+    public ImageUrl? ImageUrl { get; set; }
+    [JsonPropertyName("text")]
+    public string? Text { get; set; } 
+}
+
+public class ImageUrl
+{
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+}
+
+public class OpenRouterMessage : IOpenRouterMessage
 {
     [JsonPropertyName("role")]
     public string Role { get; set; } = "user";
@@ -109,6 +165,9 @@ public class OpenRouterToolCall
 
     [JsonPropertyName("function")]
     public OpenRouterFunctionCall Function { get; set; } = new();
+
+    [JsonPropertyName("index")]
+    public int? Index { get; set; }
 }
 
 public class OpenRouterFunctionCall

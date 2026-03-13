@@ -150,9 +150,9 @@ Jedna osoba może mieć wiele tagów. Zwróć TYLKO JSON array w formacie:
 Opisy:
 {jobDescriptions}";
 
-        var messages = new List<OpenRouterMessage>
+        var messages = new List<IOpenRouterMessage>
         {
-            new() { Role = "user", Content = prompt }
+            new OpenRouterMessage { Role = "user", Content = prompt }
         };
 
         var fullResponse = new System.Text.StringBuilder();
