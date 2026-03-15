@@ -33,23 +33,33 @@ public class Task02Solution(IAgentSessionService agentSessionService, IAiDevsApi
 You have access to:
 1. A list of suspects with their personal details
 2. Power plant locations with their codes
-3. Tools to query where suspects were seen and their access levels
+3. Tools to query where suspects were seen and their access level
+4. A tool to get the exact location of a city where power plants are located
 
 Your task:
-1. For each suspect, get their location history using get_person_locations
-2. Compare the locations with power plant locations (find very close matches)
-3. When you find someone who was near a power plant, get their access level using get_access_level
-
+1. For each power plant, use get_exact_location_of_the_city to get its exact coordinates
+2. For each suspect, get their location history using get_person_locations
+3. Compare exact coordinates: check if any suspect's location matches a power plant location (approximate less than 0.001)
+4. When you find someone who was at a power plant location, get their access level using get_access_level
+5. Get the code of the power plant they were at
+6. Return the answer only in this exact JSON format (do not include any additional text):
+{
+  ""name"": ""FirstName"",
+  ""surname"": ""LastName"",
+  ""accessLevel"": 3,
+  ""powerPlant"": ""PWR1234PL""
+}
 Suspects:
 " + suspectsJson + @"
 
 Power Plants:
-" + powerPlantsJson;
+" + powerPlantsJson + @"
+!!! ANSWER ONLY IN JSON FORMAT!!!";
 
         var messages = new List<OpenRouterMessage>
         {
             new() { Role = "system", Content = systemPrompt },
-            new() { Role = "user", Content = "Find the suspect who visited a power plant. Check each person's locations and match with power plant Cities." }
+            new() { Role = "user", Content = "Find the suspect who visited a power plant. First get exact coordinates for each power plant using get_coordinates_of_the_city. Then check each person's locations and compare with exact power plant coordinates." }
         };
 
         yield return StreamUpdate.Status("Starting agent session...");
@@ -58,11 +68,10 @@ Power Plants:
         string? answer = null;
         await foreach (var update in agentSessionService.ExecuteAgentSessionStreamAsync(
             messages,
-            [typeof(GetPersonLocationsFunction), typeof(GetAccessLevelFunction)],
-            model: OpenRouterModel.Claude45Haiku,
+            [typeof(GetPersonLocationsFunction), typeof(GetAccessLevelFunction), typeof(GetCoordinatesOfTheCityFunction)],
+            model: OpenRouterModel.Claude45Sonnet,
             temperature: 0,
             maxIterations: 20,
-            responseFormatType: typeof(SuspectAnswer),
             cancellationToken: cancellationToken))
         {
             yield return update;

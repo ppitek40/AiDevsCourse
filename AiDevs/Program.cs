@@ -39,6 +39,7 @@ builder.Services.AddSingleton<IProxyEventAggregator, ProxyEventAggregator>();
 // Register function handlers for Task02
 builder.Services.AddTransient<GetPersonLocationsFunction>();
 builder.Services.AddTransient<GetAccessLevelFunction>();
+builder.Services.AddTransient<GetCoordinatesOfTheCityFunction>();
 
 // Register function handlers for Task03
 builder.Services.AddTransient<CheckPackageFunction>();
