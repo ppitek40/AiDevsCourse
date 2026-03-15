@@ -6,7 +6,7 @@ import { AgentOutput, LogLevel, StreamUpdate, StreamUpdateType } from '../models
 })
 export class AgentOutputService {
   private readonly outputSignal = signal<AgentOutput[]>([]);
-  private eventSources = new Map<number, { close: () => Promise<void> }>();
+  private eventSources = new Map<number, { close: () => Promise<void>; abortController: AbortController }>();
   private lastLLMTokenOutputId = new Map<number, string>();
 
   readonly output = this.outputSignal.asReadonly();
@@ -36,9 +36,23 @@ export class AgentOutputService {
     this.lastLLMTokenOutputId.delete(taskId);
   }
 
-  startTaskStream(taskId: number, url: string): void {
+  startTaskStream(taskId: number, url: string, body: unknown = {}): void {
     // Close existing stream if any
     this.stopTaskStream(taskId);
+
+    const abortController = new AbortController();
+
+    // Register stream as active immediately
+    this.eventSources.set(taskId, {
+      abortController,
+      close: async () => {
+        try {
+          abortController.abort();
+        } catch {
+          // Ignore cancellation errors
+        }
+      }
+    });
 
     // EventSource only supports GET, so we need to use fetch for POST with SSE
     fetch(url, {
@@ -47,7 +61,8 @@ export class AgentOutputService {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify(body),
+      signal: abortController.signal,
     })
       .then((response) => {
         if (!response.ok) {
@@ -60,6 +75,19 @@ export class AgentOutputService {
         if (!reader) {
           throw new Error('No response body');
         }
+
+        // Update the close function to include reader cancellation
+        this.eventSources.set(taskId, {
+          abortController,
+          close: async () => {
+            try {
+              abortController.abort();
+              await reader.cancel();
+            } catch {
+              // Ignore cancellation errors
+            }
+          }
+        });
 
         const readStream = () => {
           reader
@@ -106,17 +134,6 @@ export class AgentOutputService {
         };
 
         readStream();
-
-        // Store a reference so we can abort if needed
-        this.eventSources.set(taskId, {
-          close: async () => {
-            try {
-              await reader.cancel();
-            } catch {
-              // Ignore cancellation errors
-            }
-          }
-        });
       })
       .catch(() => {
         this.addOutput(taskId, 'Failed to start task execution', LogLevel.Error);

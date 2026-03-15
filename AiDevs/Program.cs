@@ -31,7 +31,6 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddTransient<IAgentSessionService, AgentSessionService>();
 builder.Services.AddTransient<IToolsService, ToolsService>();
-builder.Services.AddTransient<ILlmExecutionService, LlmExecutionService>();
 
 // Register Task03 services
 builder.Services.AddSingleton<IConversationMemoryService, ConversationMemoryService>();

@@ -41,11 +41,12 @@ public class OpenRouterService(HttpClient httpClient, IConfiguration configurati
 
     public async IAsyncEnumerable<OpenRouterStreamChunk> StreamChatWithToolsAsync(
         List<IOpenRouterMessage> messages,
-        List<OpenRouterTool>? tools = null,
-        object? toolChoice = null,
-        OpenRouterModel model = OpenRouterModel.Gpt4o,
-        double temperature = 0.7,
+        List<OpenRouterTool>? tools,
+        object? toolChoice,
+        OpenRouterModel model,
+        double temperature,
         int? maxTokens = null,
+        Type? responseFormatType = null,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var request = new OpenRouterRequest
@@ -56,6 +57,7 @@ public class OpenRouterService(HttpClient httpClient, IConfiguration configurati
             Messages = messages,
             Tools = tools,
             ToolChoice = toolChoice,
+            ResponseFormat = responseFormatType?.ToResponseFormat(),
             Stream = true
         };
 
@@ -80,7 +82,9 @@ public class OpenRouterService(HttpClient httpClient, IConfiguration configurati
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
 
         using var response = await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+            throw new HttpRequestException($"HTTP {response.StatusCode}: {await response.Content.ReadAsStringAsync(cancellationToken)}");
 
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var reader = new StreamReader(stream);

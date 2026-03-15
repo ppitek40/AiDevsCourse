@@ -8,8 +8,9 @@ public interface IAgentSessionService
     IAsyncEnumerable<StreamUpdate> ExecuteAgentSessionStreamAsync(
         List<OpenRouterMessage> initialMessages,
         List<Type> handlerTypes,
-        OpenRouterModel model = OpenRouterModel.Claude35Sonnet,
+        OpenRouterModel model = OpenRouterModel.Gemini25Flash,
         double temperature = 0,
         int maxIterations = 20,
+        Type? responseFormatType = null,
         CancellationToken cancellationToken = default);
 }

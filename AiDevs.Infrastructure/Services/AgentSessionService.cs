@@ -11,9 +11,10 @@ public class AgentSessionService(IOpenRouterService openRouterService, IServiceP
     public async IAsyncEnumerable<StreamUpdate> ExecuteAgentSessionStreamAsync(
         List<OpenRouterMessage> initialMessages,
         List<Type> handlerTypes,
-        OpenRouterModel model = OpenRouterModel.Gpt4o,
+        OpenRouterModel model,
         double temperature = 0,
-        int maxIterations = 20,
+        int maxIterations = 20,       
+        Type? responseFormatType = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var tools = toolsService.GetTools(handlerTypes);
@@ -34,11 +35,14 @@ public class AgentSessionService(IOpenRouterService openRouterService, IServiceP
                 toolChoice: "auto",
                 model: model,
                 temperature: temperature,
+                responseFormatType: responseFormatType,
                 cancellationToken: cancellationToken))
             {
                 await foreach (var p in HandleDataChunks(chunk, messageContent, currentToolCall, toolCalls).WithCancellation(cancellationToken))
                     yield return p;
             }
+
+            toolCalls = toolCalls.DistinctBy(t => t.Id).ToList();
 
             // Add assistant message
             var assistantMessage = new OpenRouterMessage

@@ -1,5 +1,7 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AiDevs.Core.Interfaces;
+using AiDevs.Core.Models;
 using AiDevs.Infrastructure.Models;
 using AiDevs.Infrastructure.Services;
 using AiDevs.Tools;
@@ -12,9 +14,7 @@ namespace AiDevs.Controllers;
 public class SolutionsController(
     IEnumerable<ITaskSolution> solutions,
     ILogger<SolutionsController> logger,
-    IAiDevsApiService aiDevsApiService,
-    ILlmExecutionService llmExecutionService,
-    IAgentSessionService agentSessionService)
+    IAiDevsApiService aiDevsApiService)
     : ControllerBase
 {
     /// <summary>
@@ -62,8 +62,8 @@ public class SolutionsController(
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled exception while streaming Task {TaskId}", taskId);
-            var errorUpdate = new { type = "error", error = ex.Message };
-            var json = JsonSerializer.Serialize(errorUpdate);
+            var err = StreamUpdate.Complete(SolutionResult.Fail(ex.Message));
+            var json = JsonSerializer.Serialize(err);
             await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
         }
@@ -108,50 +108,26 @@ public class SolutionsController(
         return Ok(new { tasks });
     }
 
-    /// <summary>
-    /// Execute a custom LLM call with specified model, tools, and parameters
-    /// </summary>
-    [HttpPost("custom-llm")]
-    public async Task CustomLlmCall(
-        [FromBody] CustomLlmRequest request,
-        CancellationToken cancellationToken)
-    {
-        logger.LogInformation("Executing custom LLM call with model {Model}", request.Model);
-
-        // Set headers for Server-Sent Events
-        Response.ContentType = "text/event-stream";
-        Response.Headers.Append("Cache-Control", "no-cache");
-        Response.Headers.Append("Connection", "keep-alive");
-        Response.Headers.Append("X-Accel-Buffering", "no");
-
-
-        var messages = new List<OpenRouterMessage>();
-        if (!string.IsNullOrEmpty(request.SystemMessage))
-            messages.Add(new OpenRouterMessage { Role = "system", Content = request.SystemMessage });
-
-        messages.Add(new OpenRouterMessage { Role = "user", Content = request.UserMessage });
-
-        await foreach (var update in agentSessionService.ExecuteAgentSessionStreamAsync(
-            messages,
-            request.ToolTypes ?? [],
-            request.Model,
-            request.Temperature,
-            request.Iterations,
-            cancellationToken))
-        {
-            var json = JsonSerializer.Serialize(update);
-            await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
-            await Response.Body.FlushAsync(cancellationToken);
-        }
-    }
+   
 }
 
 public class CustomLlmRequest
 {
+    [JsonPropertyName("model")]
     public OpenRouterModel Model { get; set; } = OpenRouterModel.Gpt4o;
-    public List<Type>? ToolTypes { get; set; }
+
+    [JsonPropertyName("toolTypes")]
+    public List<string> ToolTypes { get; set; } = [];
+
+    [JsonPropertyName("systemMessage")]
     public string? SystemMessage { get; set; }
+
+    [JsonPropertyName("userMessage")]
     public string UserMessage { get; set; } = string.Empty;
+
+    [JsonPropertyName("temperature")]
     public double Temperature { get; set; } = 0.7;
+
+    [JsonPropertyName("iterations")]
     public int Iterations { get; set; } = 1;
 }

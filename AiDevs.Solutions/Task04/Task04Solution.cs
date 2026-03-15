@@ -65,9 +65,10 @@ Zwróć TYLKO gotową deklarację, bez żadnych dodatkowych komentarzy.
         await foreach (var update in agentSessionService.ExecuteAgentSessionStreamAsync(
             messages,
             [typeof(FetchDocumentFunction)],
-            OpenRouterModel.Gemini25Flash,
+            OpenRouterModel.Gpt41Nano,
             0.4,
             30,
+            null,
             cancellationToken))
         {
             yield return update;

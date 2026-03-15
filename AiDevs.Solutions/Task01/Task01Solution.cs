@@ -158,7 +158,7 @@ Opisy:
         var fullResponse = new System.Text.StringBuilder();
         await foreach (var token in openRouterService.StreamChatAsync(
             messages,
-            model: OpenRouterModel.Gpt4o,
+            model: OpenRouterModel.Gpt41Nano,
             temperature: 0.3,
             cancellationToken: cancellationToken))
         {

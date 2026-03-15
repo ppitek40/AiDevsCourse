@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { LlmActionMetadata } from '../models/llm-action.model';
 
 export interface ApiConfig {
   baseUrl: string;

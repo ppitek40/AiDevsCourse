@@ -27,5 +27,6 @@ public interface IOpenRouterService
         OpenRouterModel model = OpenRouterModel.Gpt4o,
         double temperature = 0.7,
         int? maxTokens = null,
+        Type? responseFormatType = null,
         CancellationToken cancellationToken = default);
 }

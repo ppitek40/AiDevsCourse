@@ -26,6 +26,50 @@ public class OpenRouterRequest
 
     [JsonPropertyName("stream")]
     public bool Stream { get; set; }
+
+    [JsonPropertyName("parallel_tool_calls")]
+    public bool ParallelToolCalls { get; set; } = true;
+    [JsonPropertyName("response_format")]
+    public ResponseFormat? ResponseFormat { get; set; } 
+}
+
+public class ResponseFormat
+{
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "json_schema";
+    [JsonPropertyName("json_schema")]
+    public JsonSchema JsonSchema { get; set; }
+}
+
+public class JsonSchema
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("strict")]
+    public bool Strict { get; set; } = true;
+
+    [JsonPropertyName("schema")]
+    public Schema Schema { get; set; }
+}
+
+public class Schema
+{
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "object";
+    [JsonPropertyName("properties")]
+    public Dictionary<string, ResponseProperty> Properties { get; set; } = new();
+    [JsonPropertyName("required")]
+    public List<string>? Required { get; set; }
+    [JsonPropertyName("additionalProperties")]
+    public bool AdditionalProperties { get; set; } = false;
+}
+
+public class ResponseProperty
+{
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "string";
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
 }
 
 [JsonConverter(typeof(JsonPolymorphicConverter))]

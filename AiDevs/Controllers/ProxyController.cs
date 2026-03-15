@@ -59,7 +59,7 @@ WAŻNE: Gdy operator poprosi Cię o przekierowanie przesyłki z częściami reak
             await foreach (var update in agentSessionService.ExecuteAgentSessionStreamAsync(
                 messages,
                 [typeof(CheckPackageFunction), typeof(RedirectPackageFunction)],
-                model: OpenRouterModel.Gpt4o,
+                model: OpenRouterModel.Gpt41Nano,
                 temperature: 0.7,
                 maxIterations: 5,
                 cancellationToken: cancellationToken))

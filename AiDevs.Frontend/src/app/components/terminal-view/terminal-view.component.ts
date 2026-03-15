@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, inject, input, computed, effect, viewChild, ElementRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, input, computed, effect, viewChild, ElementRef, output } from '@angular/core';
 import { AgentOutputService } from '../../services/agent-output.service';
 import { TaskService } from '../../services/task.service';
 import { ApiService } from '../../services/api.service';
 import { LogLevel } from '../../models/agent-output.model';
 import { TerminalRecordComponent } from '../terminal-record/terminal-record.component';
+import { LlmActionRequest } from '../../models/llm-action.model';
 
 @Component({
   selector: 'app-terminal-view',
@@ -19,9 +20,18 @@ import { TerminalRecordComponent } from '../terminal-record/terminal-record.comp
         <div class="terminal-actions">
           <button
             type="button"
+            class="action-button custom-mode-button"
+            [class.active]="isCustomMode()"
+            (click)="toggleCustomMode()"
+            aria-label="Toggle custom LLM mode"
+          >
+            {{ isCustomMode() ? 'Exit Custom' : 'Custom LLM' }}
+          </button>
+          <button
+            type="button"
             class="action-button start-button"
             (click)="startTask()"
-            [disabled]="taskId() === null"
+            [disabled]="taskId() === null && llmActionRequest() === null"
             aria-label="Start task execution"
           >
             Start
@@ -30,7 +40,7 @@ import { TerminalRecordComponent } from '../terminal-record/terminal-record.comp
             type="button"
             class="action-button stop-button"
             (click)="stopTask()"
-            [disabled]="taskId() === null || !isStreamActive()"
+            [disabled]="effectiveTaskId() === null || !isStreamActive()"
             aria-label="Stop task execution"
           >
             Stop
@@ -131,6 +141,18 @@ import { TerminalRecordComponent } from '../terminal-record/terminal-record.comp
       color: #ef4444;
     }
 
+    .custom-mode-button:hover:not(:disabled) {
+      background: #3b82f620;
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+
+    .custom-mode-button.active {
+      background: #3b82f620;
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+
     .terminal-output {
       flex: 1;
       overflow-y: auto;
@@ -181,16 +203,28 @@ export class TerminalViewComponent {
   private readonly apiService = inject(ApiService);
 
   readonly taskId = input<number | null>(null);
+  readonly llmActionRequest = input<LlmActionRequest | null>(null);
+  readonly isCustomMode = input<boolean>(false);
+
+  readonly customModeToggled = output<void>();
 
   private readonly terminalOutput = viewChild<ElementRef<HTMLDivElement>>('terminalOutput');
 
+  protected readonly effectiveTaskId = computed(() => {
+    const llmAction = this.llmActionRequest();
+    return llmAction !== null ? -1 : this.taskId();
+  });
+
   protected readonly outputs = computed(() => {
-    const id = this.taskId();
+    const id = this.effectiveTaskId();
     if (id === null) return [];
     return this.agentOutputService.getOutputForTask(id);
   });
 
   protected readonly taskName = computed(() => {
+    const llmAction = this.llmActionRequest();
+    if (llmAction !== null) return 'Custom LLM Action';
+
     const id = this.taskId();
     if (id === null) return 'Terminal';
     const task = this.taskService.getTaskById(id);
@@ -198,7 +232,7 @@ export class TerminalViewComponent {
   });
 
   protected readonly isStreamActive = computed(() => {
-    const id = this.taskId();
+    const id = this.effectiveTaskId();
     return id !== null && this.agentOutputService.isStreamActive(id);
   });
 
@@ -208,9 +242,23 @@ export class TerminalViewComponent {
       this.outputs(); // Track changes
       setTimeout(() => this.scrollToBottom(), 0);
     });
+
+    // Auto-start LLM action when request is provided
+    effect(() => {
+      const llmAction = this.llmActionRequest();
+      if (llmAction !== null) {
+        this.startLlmAction(llmAction);
+      }
+    });
   }
 
   protected startTask(): void {
+    const llmAction = this.llmActionRequest();
+    if (llmAction !== null) {
+      this.startLlmAction(llmAction);
+      return;
+    }
+
     const id = this.taskId();
     if (id !== null) {
       const streamUrl = this.apiService.getStreamUrl(`solutions/${id}`);
@@ -219,19 +267,30 @@ export class TerminalViewComponent {
     }
   }
 
+  private startLlmAction(request: LlmActionRequest): void {
+    const actionTaskId = -1; // Special ID for custom LLM actions
+    const streamUrl = this.apiService.getStreamUrl('custom-llm');
+    this.agentOutputService.addOutput(actionTaskId, 'Starting custom LLM action...', LogLevel.Info);
+    this.agentOutputService.startTaskStream(actionTaskId, streamUrl, request);
+  }
+
   protected stopTask(): void {
-    const id = this.taskId();
+    const id = this.effectiveTaskId();
     if (id !== null) {
       this.agentOutputService.stopTaskStream(id);
-      this.agentOutputService.addOutput(id, 'warning', LogLevel.Warning);
+      this.agentOutputService.addOutput(id, 'Task stopped by user', LogLevel.Warning);
     }
   }
 
   protected clearOutput(): void {
-    const id = this.taskId();
+    const id = this.effectiveTaskId();
     if (id !== null) {
       this.agentOutputService.clearOutputForTask(id);
     }
+  }
+
+  protected toggleCustomMode(): void {
+    this.customModeToggled.emit();
   }
 
   private scrollToBottom(): void {
