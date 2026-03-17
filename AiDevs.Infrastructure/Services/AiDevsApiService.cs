@@ -57,6 +57,23 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
 
     public async Task<SolutionResult> VerifyAsync(string task, object answer, CancellationToken cancellationToken = default)
     {
+        try
+        {
+            var response = await VerifyRawAsync(task, answer, cancellationToken);
+            var result = await response.Content.ReadAsStringAsync(cancellationToken);
+            return !response.IsSuccessStatusCode 
+                ? SolutionResult.Fail($"HTTP {response.StatusCode}: {result}") 
+                : SolutionResult.Ok(result);
+        }
+        catch (Exception e)
+        {
+            return SolutionResult.Fail(e.Message);
+        }
+    }
+
+
+    public async Task<HttpResponseMessage> VerifyRawAsync(string task, object answer, CancellationToken cancellationToken = default)
+    {
         var payload = new
         {
             apikey = _apiKey,
@@ -67,18 +84,7 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        try
-        {
-            var response = await httpClient.PostAsync($"{BaseUrl}/verify", content, cancellationToken);
-            var result = await response.Content.ReadAsStringAsync(cancellationToken);
-            return !response.IsSuccessStatusCode 
-                ? SolutionResult.Fail($"HTTP {response.StatusCode}: {result}") 
-                : SolutionResult.Ok(result);
-        }
-        catch (Exception e)
-        {
-            return SolutionResult.Fail(e.Message);
-        }
+        return await httpClient.PostAsync($"{BaseUrl}/verify", content, cancellationToken);
     }
 
     public async Task<StatsResponse> GetStatsAsync(CancellationToken cancellationToken = default)

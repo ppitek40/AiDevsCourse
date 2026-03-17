@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using AiDevs.Core.Models;
 using AiDevs.Infrastructure.Models;
 
@@ -70,7 +71,19 @@ public class AgentSessionService(IOpenRouterService openRouterService, IServiceP
 
                 string result;
                 if (handler != null)
+                {
                     result = await toolsService.ExecuteToolAsync(handler, toolCall.Function.Arguments, cancellationToken);
+                    // Ensure proper JSON encoding without escape sequences
+                    if (IsJson(result))
+                    {
+                        var jsonDoc = JsonDocument.Parse(result);
+                        result = JsonSerializer.Serialize(jsonDoc, new JsonSerializerOptions
+                        {
+                            WriteIndented = false,
+                            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                        });
+                    }
+                }
                 else
                     result = "Unknown function";
 
@@ -119,5 +132,12 @@ public class AgentSessionService(IOpenRouterService openRouterService, IServiceP
                     Function = new OpenRouterFunctionCall { Name = builder.Name, Arguments = builder.Arguments.ToString() }
                 }));
         }
+    }
+
+    private static bool IsJson(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        text = text.Trim();
+        return (text.StartsWith("{") && text.EndsWith("}")) || (text.StartsWith("[") && text.EndsWith("]"));
     }
 }

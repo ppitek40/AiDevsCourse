@@ -32,7 +32,7 @@ import { AgentOutput, StreamUpdateType } from '../../models/agent-output.model';
               @if (output().streamUpdate!.toolInput) {
                 <details class="tool-details">
                   <summary>Input</summary>
-                  <pre class="tool-input">{{ output().streamUpdate!.toolInput }}</pre>
+                  <pre class="tool-input">{{ formatText(output().streamUpdate!.toolInput) }}</pre>
                 </details>
               }
             </div>
@@ -44,7 +44,7 @@ import { AgentOutput, StreamUpdateType } from '../../models/agent-output.model';
               @if (output().streamUpdate!.toolOutput) {
                 <details class="tool-details">
                   <summary>Output</summary>
-                  <pre class="tool-output">{{ output().streamUpdate!.toolOutput }}</pre>
+                  <pre class="tool-output">{{ formatText(output().streamUpdate!.toolOutput) }}</pre>
                 </details>
               }
             </div>
@@ -66,13 +66,13 @@ import { AgentOutput, StreamUpdateType } from '../../models/agent-output.model';
                   @if (output().streamUpdate!.finalResult!.output) {
                     <details class="tool-details">
                       <summary>Output</summary>
-                      <pre class="tool-output">{{ output().streamUpdate!.finalResult!.output }}</pre>
+                      <pre class="tool-output">{{ formatText(output().streamUpdate!.finalResult!.output) }}</pre>
                     </details>
                   }
                   @if (output().streamUpdate!.finalResult!.error) {
                     <details class="tool-details" open>
                       <summary>Error</summary>
-                      <pre class="tool-error">{{ output().streamUpdate!.finalResult!.error }}</pre>
+                      <pre class="tool-error">{{ formatText(output().streamUpdate!.finalResult!.error) }}</pre>
                     </details>
                   }
                   @if (output().streamUpdate!.finalResult!.metadata) {
@@ -360,8 +360,13 @@ export class TerminalRecordComponent {
     if (!content) return '';
     const trimmed = content.trim();
     if (trimmed.startsWith('```json') && trimmed.endsWith('```')) {
-      return trimmed.slice(7, -3).trim();
+      return this.formatText(trimmed.slice(7, -3).trim());
     }
-    return content;
+    return this.formatText(content);
+  }
+
+  protected formatText(text: string | undefined): string {
+    if (!text) return '';
+    return text.replace(/\\n/g, '\n');
   }
 }

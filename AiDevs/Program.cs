@@ -4,6 +4,8 @@ using AiDevs.Solutions.Task01;
 using AiDevs.Solutions.Task02;
 using AiDevs.Solutions.Task03;
 using AiDevs.Solutions.Task04;
+using AiDevs.Solutions.Task05;
+using AiDevs.Solutions.Task06;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,11 +50,19 @@ builder.Services.AddTransient<RedirectPackageFunction>();
 // Register function handlers for Task04
 builder.Services.AddTransient<FetchDocumentFunction>();
 
+// Register function handlers for Task05
+builder.Services.AddTransient<RailwayApiFunction>();
+
+// Register function handlers for Task06
+builder.Services.AddTransient<VerifyPromptFunction>();
+
 // Register all task solutions
 builder.Services.AddTransient<ITaskSolution, Task01Solution>();
 builder.Services.AddTransient<ITaskSolution, Task02Solution>();
 builder.Services.AddTransient<ITaskSolution, Task03Solution>();
 builder.Services.AddTransient<ITaskSolution, Task04Solution>();
+builder.Services.AddTransient<ITaskSolution, Task05Solution>();
+builder.Services.AddTransient<ITaskSolution, Task06Solution>();
 // Add more task solutions here as you implement them:
 // ... etc
 

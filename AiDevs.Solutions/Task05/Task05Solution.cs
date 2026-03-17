@@ -25,21 +25,22 @@ public class Task05Solution(
         var systemPrompt = $@"You are an AI agent tasked with activating railway route {RailwayCode} using a self-documenting API.
 
 Your task:
-1. Start by calling the Railway API with action='help' to get the complete API documentation
-2. Carefully read and analyze the documentation to understand:
+1. Start by calling the Railway API with 'action'='help' to get the complete API documentation
+2. Carefully read and analyze the API responses to understand:
    - What actions are available
    - What parameters each action requires
    - The correct sequence of API calls needed to activate the railway
+3. Follow the API Responses and respect given tips. Use help if needed
 3. Follow the documented workflow step by step to activate railway {RailwayCode}
 4. Handle any errors or requirements mentioned in API responses
 5. Continue calling the API until you receive a flag in format {{FLG:...}}
 6. When you get the flag, return it in your final response
 
 IMPORTANT NOTES:
-- The API handles 503 errors automatically with retries - don't worry about them
-- Rate limits are monitored automatically - check the _rateLimitInfo in responses
 - Read the API documentation carefully - it will tell you exactly what to do
 - Follow the instructions in each API response
+- The rate limitting is really strict - DO NOT WASTE API CALLS
+- if you get an Bad Request error. DO NOT BRUTE FORCE IT - try to understand the error from the response content
 - If you get an error, read it carefully and adjust your approach
 - The goal is to get a response containing {{FLG:...}} which means success
 
@@ -48,7 +49,7 @@ Return your final answer with the flag when you receive it.";
         var messages = new List<OpenRouterMessage>
         {
             new() { Role = "system", Content = systemPrompt },
-            new() { Role = "user", Content = $"Activate railway {RailwayCode}. Start by getting the API documentation with action='help', then follow the documented steps." }
+            new() { Role = "user", Content = $"Activate railway {RailwayCode}. Start by getting the API documentation with 'action'='help', then follow the documented steps." }
         };
 
         yield return StreamUpdate.Status("Starting agent session with railway API access...");
