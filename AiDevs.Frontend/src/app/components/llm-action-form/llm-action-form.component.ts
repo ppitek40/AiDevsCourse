@@ -293,8 +293,8 @@ export class LlmActionFormComponent implements OnInit {
     toolTypes: this.fb.control<string[]>([], { nonNullable: true }),
     systemMessage: this.fb.control('', { nonNullable: true }),
     userMessage: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
-    temperature: this.fb.control(0.7, { nonNullable: true, validators: [Validators.min(0), Validators.max(2)] }),
-    iterations: this.fb.control(1, { nonNullable: true, validators: [Validators.min(1), Validators.max(10)] }),
+    temperature: this.fb.control(0.7, { nonNullable: true, validators: [Validators.min(0), Validators.max(1)] }),
+    iterations: this.fb.control(1, { nonNullable: true, validators: [Validators.min(1), Validators.max(30)] }),
   });
 
   ngOnInit(): void {

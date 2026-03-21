@@ -7,6 +7,7 @@ using AiDevs.Solutions.Task04;
 using AiDevs.Solutions.Task05;
 using AiDevs.Solutions.Task06;
 using AiDevs.Solutions.Task07;
+using AiDevs.Solutions.Task08;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,6 +62,12 @@ builder.Services.AddTransient<VerifyPromptFunction>();
 builder.Services.AddTransient<RotateFunction>();
 builder.Services.AddTransient<GetElectricityDiagramFunction>();
 
+// Register function handlers for Task08
+builder.Services.AddTransient<LogReaderFunction>();
+builder.Services.AddTransient<SendLogsFunction>();
+builder.Services.AddTransient<LoadLogChunkFunction>();
+builder.Services.AddTransient<TokenCounterFunction>();
+
 // Register all task solutions
 builder.Services.AddTransient<ITaskSolution, Task01Solution>();
 builder.Services.AddTransient<ITaskSolution, Task02Solution>();
@@ -69,6 +76,7 @@ builder.Services.AddTransient<ITaskSolution, Task04Solution>();
 builder.Services.AddTransient<ITaskSolution, Task05Solution>();
 builder.Services.AddTransient<ITaskSolution, Task06Solution>();
 builder.Services.AddTransient<ITaskSolution, Task07Solution>();
+builder.Services.AddTransient<ITaskSolution, Task08Solution>();
 // Add more task solutions here as you implement them:
 // ... etc
 

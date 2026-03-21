@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, viewChild } from '@angular/core';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TerminalViewComponent } from '../../components/terminal-view/terminal-view.component';
 import { LlmActionFormComponent } from '../../components/llm-action-form/llm-action-form.component';
@@ -23,6 +23,7 @@ import { LlmActionRequest } from '../../models/llm-action.model';
             [llmActionRequest]="llmActionRequest()"
             [isCustomMode]="isCustomMode()"
             (customModeToggled)="onCustomModeToggled()"
+            (llmActionCompleted)="onLlmActionCompleted()"
           />
         </main>
       </div>
@@ -59,6 +60,7 @@ export class DashboardComponent {
   protected readonly llmActionRequest = signal<LlmActionRequest | null>(null);
   protected readonly isCustomMode = signal(false);
 
+  private readonly llmActionForm = viewChild(LlmActionFormComponent);
   private lastTaskIdBeforeCustomMode: number | null = null;
 
   protected onTaskSelected(taskId: number): void {
@@ -70,6 +72,10 @@ export class DashboardComponent {
   protected onLlmActionSubmitted(request: LlmActionRequest): void {
     this.selectedTaskId.set(null);
     this.llmActionRequest.set(request);
+  }
+
+  protected onLlmActionCompleted(): void {
+    this.llmActionForm()?.resetLoading();
   }
 
   protected onCustomModeToggled(): void {

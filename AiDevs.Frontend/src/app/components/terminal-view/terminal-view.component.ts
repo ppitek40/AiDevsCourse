@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, input, computed, effect, viewChild, ElementRef, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, input, computed, effect, viewChild, ElementRef, output, signal } from '@angular/core';
 import { AgentOutputService } from '../../services/agent-output.service';
 import { TaskService } from '../../services/task.service';
 import { ApiService } from '../../services/api.service';
@@ -207,8 +207,10 @@ export class TerminalViewComponent {
   readonly isCustomMode = input<boolean>(false);
 
   readonly customModeToggled = output<void>();
+  readonly llmActionCompleted = output<void>();
 
   private readonly terminalOutput = viewChild<ElementRef<HTMLDivElement>>('terminalOutput');
+  private readonly wasStreamActive = signal(false);
 
   protected readonly effectiveTaskId = computed(() => {
     const llmAction = this.llmActionRequest();
@@ -249,6 +251,24 @@ export class TerminalViewComponent {
       if (llmAction !== null) {
         this.startLlmAction(llmAction);
       }
+    });
+
+    // Track stream state changes and notify when LLM action completes
+    effect(() => {
+      const isActive = this.isStreamActive();
+
+      // Detect transition from active to inactive
+      if (this.wasStreamActive() && !isActive) {
+        const effectiveId = this.effectiveTaskId();
+
+        // If this was an LLM action (taskId = -1), notify completion
+        if (effectiveId === -1) {
+          this.llmActionCompleted.emit();
+        }
+      }
+
+      // Always update tracking state
+      this.wasStreamActive.set(isActive);
     });
   }
 

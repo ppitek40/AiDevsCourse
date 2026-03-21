@@ -7,6 +7,7 @@ import { AgentOutput, LogLevel, StreamUpdate, StreamUpdateType } from '../models
 export class AgentOutputService {
   private readonly outputSignal = signal<AgentOutput[]>([]);
   private eventSources = new Map<number, { close: () => Promise<void>; abortController: AbortController }>();
+  private readonly activeStreamsSignal = signal<Set<number>>(new Set());
   private lastLLMTokenOutputId = new Map<number, string>();
 
   readonly output = this.outputSignal.asReadonly();
@@ -53,6 +54,7 @@ export class AgentOutputService {
         }
       }
     });
+    this.activeStreamsSignal.update(streams => new Set(streams).add(taskId));
 
     // EventSource only supports GET, so we need to use fetch for POST with SSE
     fetch(url, {
@@ -148,10 +150,15 @@ export class AgentOutputService {
       this.eventSources.delete(taskId);
     }
     this.lastLLMTokenOutputId.delete(taskId);
+    this.activeStreamsSignal.update(streams => {
+      const newSet = new Set(streams);
+      newSet.delete(taskId);
+      return newSet;
+    });
   }
 
   isStreamActive(taskId: number): boolean {
-    return this.eventSources.has(taskId);
+    return this.activeStreamsSignal().has(taskId);
   }
 
   private addOutputWithStreamUpdate(
