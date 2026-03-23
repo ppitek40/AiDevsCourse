@@ -8,6 +8,7 @@ using AiDevs.Solutions.Task05;
 using AiDevs.Solutions.Task06;
 using AiDevs.Solutions.Task07;
 using AiDevs.Solutions.Task08;
+using AiDevs.Solutions.Task09;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -68,6 +69,10 @@ builder.Services.AddTransient<SendLogsFunction>();
 builder.Services.AddTransient<LoadLogChunkFunction>();
 builder.Services.AddTransient<TokenCounterFunction>();
 
+// Register function handlers for Task09
+builder.Services.AddTransient<SearchEmailFunction>();
+builder.Services.AddTransient<MailboxVerifyFunction>();
+
 // Register all task solutions
 builder.Services.AddTransient<ITaskSolution, Task01Solution>();
 builder.Services.AddTransient<ITaskSolution, Task02Solution>();
@@ -77,6 +82,8 @@ builder.Services.AddTransient<ITaskSolution, Task05Solution>();
 builder.Services.AddTransient<ITaskSolution, Task06Solution>();
 builder.Services.AddTransient<ITaskSolution, Task07Solution>();
 builder.Services.AddTransient<ITaskSolution, Task08Solution>();
+builder.Services.AddTransient<ITaskSolution, Task09Solution>();
+
 // Add more task solutions here as you implement them:
 // ... etc
 
