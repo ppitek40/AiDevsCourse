@@ -25,11 +25,10 @@ public static class FunctionExtensions
 
             var jsonName = prop.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? prop.Name.ToLower();
 
-            properties[jsonName] = new
-            {
-                type = GetJsonType(prop.PropertyType),
-                description = paramAttr.Description
-            };
+            var typeInfo = GetJsonType(prop.PropertyType);
+            properties[jsonName] = typeInfo is string typeStr
+                ? new { type = typeStr, description = paramAttr.Description }
+                : new { type = ((dynamic)typeInfo).type, items = ((dynamic)typeInfo).items, description = paramAttr.Description };
 
             if (paramAttr.Required)
                 required.Add(jsonName);
@@ -54,7 +53,34 @@ public static class FunctionExtensions
     }
 
 
-    private static string GetJsonType(Type type)
+    private static object GetJsonType(Type type)
+    {
+        // Handle arrays
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType()!;
+            return new
+            {
+                type = "array",
+                items = new { type = GetElementTypeName(elementType) }
+            };
+        }
+
+        // Handle List<T>
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+        {
+            var elementType = type.GetGenericArguments()[0];
+            return new
+            {
+                type = "array",
+                items = new { type = GetElementTypeName(elementType) }
+            };
+        }
+
+        return GetElementTypeName(type);
+    }
+
+    private static string GetElementTypeName(Type type)
     {
         if (type == typeof(string))
             return "string";

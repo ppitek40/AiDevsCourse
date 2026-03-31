@@ -36,6 +36,7 @@ public interface IAiDevsApiService
     Task<string> RedirectPackageAsync(string packageId, string destination, string code, CancellationToken cancellationToken = default);
 
     Task<HttpResponseMessage> VerifyRawAsync(string task, object answer, CancellationToken cancellationToken = default);
+    Task<string> ShellCommandAsync(string command, CancellationToken cancellationToken = default);
 }
 
 public class Coordinate

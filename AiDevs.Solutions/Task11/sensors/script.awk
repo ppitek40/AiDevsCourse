@@ -1,0 +1,4 @@
+BEGIN { FS = "\"" }
+NR==3 { a = substr($2, 1, 4) }
+NR==9 { s = $4; b = substr(s,44,1) substr(s,60,1) substr(s,66,1) substr(s,74,1) substr(s,76,1) }
+END   { printf "{FLG:%s%s}\n", toupper(a), toupper(b) }

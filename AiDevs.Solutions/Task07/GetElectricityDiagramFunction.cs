@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 namespace AiDevs.Solutions.Task07;
 
 [FunctionDefinition("get_electricity_diagram", "Get the current and target electricity diagrams from the API")]
-public class GetElectricityDiagramFunction(IAiDevsApiService apiService, IOpenRouterService openRouterService, IConfiguration configuration) : IFunctionHandler
+public class GetElectricityDiagramFunction(IOpenRouterService openRouterService, IConfiguration configuration) : IFunctionHandler
 {
     public Type ParametersType => typeof(GetElectricityDiagramParameters);
 

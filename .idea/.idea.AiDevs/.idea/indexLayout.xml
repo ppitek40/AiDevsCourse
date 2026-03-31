@@ -4,7 +4,10 @@
     <attachedFolders />
     <explicitIncludes>
       <Path>TASK_DEVELOPMENT_GUIDELINES.md</Path>
+      <Path>TASK_TEMPLATE.md</Path>
     </explicitIncludes>
-    <explicitExcludes />
+    <explicitExcludes>
+      <Path>AiDevs.Solutions/Task11/sensors</Path>
+    </explicitExcludes>
   </component>
 </project>

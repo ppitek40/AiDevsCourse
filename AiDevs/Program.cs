@@ -9,6 +9,11 @@ using AiDevs.Solutions.Task06;
 using AiDevs.Solutions.Task07;
 using AiDevs.Solutions.Task08;
 using AiDevs.Solutions.Task09;
+using AiDevs.Solutions.Task10;
+using AiDevs.Solutions.Task11;
+using AiDevs.Solutions.Task12;
+using AiDevs.Solutions.Task13;
+using AiDevs.Solutions.Task14;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -73,6 +78,25 @@ builder.Services.AddTransient<TokenCounterFunction>();
 builder.Services.AddTransient<SearchEmailFunction>();
 builder.Services.AddTransient<MailboxVerifyFunction>();
 
+// Register function handlers for Task10
+builder.Services.AddTransient<ReadDroneImageFunction>();
+builder.Services.AddTransient<SendDroneInstructionsFunction>();
+
+// Register function handlers for Task11
+builder.Services.AddTransient<IOperatorNotesClassifier, OperatorNotesClassifier>();
+builder.Services.AddTransient<ISensorAnomalies, SensorAnomalies>();
+
+// Register function handlers for Task12
+builder.Services.AddTransient<ExecuteCommandFunction>();
+
+// Register function handlers for Task13
+builder.Services.AddTransient<SendCommandFunction>();
+
+// Register function handlers for Task14
+builder.Services.AddSingleton<IItemCityDataService, ItemCityDataService>();
+builder.Services.AddTransient<GetCitiesForItemCode>();
+builder.Services.AddTransient<SearchItemsFunction>();
+
 // Register all task solutions
 builder.Services.AddTransient<ITaskSolution, Task01Solution>();
 builder.Services.AddTransient<ITaskSolution, Task02Solution>();
@@ -83,6 +107,11 @@ builder.Services.AddTransient<ITaskSolution, Task06Solution>();
 builder.Services.AddTransient<ITaskSolution, Task07Solution>();
 builder.Services.AddTransient<ITaskSolution, Task08Solution>();
 builder.Services.AddTransient<ITaskSolution, Task09Solution>();
+builder.Services.AddTransient<ITaskSolution, Task10Solution>();
+builder.Services.AddTransient<ITaskSolution, Task11Solution>();
+builder.Services.AddTransient<ITaskSolution, Task12Solution>();
+builder.Services.AddTransient<ITaskSolution, Task13Solution>();
+builder.Services.AddTransient<ITaskSolution, Task14Solution>();
 
 // Add more task solutions here as you implement them:
 // ... etc
