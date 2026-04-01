@@ -10,7 +10,8 @@ public class AiDevsApiService(HttpClient httpClient, IConfiguration configuratio
 {
     private readonly string _apiKey = configuration["AiDevs:ApiKey"]
         ?? throw new InvalidOperationException("AiDevs API key not configured");
-    private const string BaseUrl = "https://hub.ag3nts.org";
+    private readonly string BaseUrl = configuration["AiDevs:BaseUrl"]
+        ?? throw new InvalidOperationException("AiDevs BaseUrl not configured"); 
 
     public async Task<List<Coordinate>> GetLocationAsync(string name, string surname, CancellationToken cancellationToken = default)
     {
