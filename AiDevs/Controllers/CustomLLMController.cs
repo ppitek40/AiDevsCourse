@@ -40,7 +40,7 @@ public class CustomLLMController(ILogger<CustomLLMController> logger, IAgentSess
             request.Temperature,
             request.Iterations,
             null,
-            cancellationToken))
+            cancellationToken: cancellationToken))
         {
             var json = JsonSerializer.Serialize(update);
             await Response.WriteAsync($"data: {json}\n\n", cancellationToken);

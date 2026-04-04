@@ -12,5 +12,6 @@ public interface IAgentSessionService
         double temperature = 0,
         int maxIterations = 20,
         Type? responseFormatType = null,
+        IMcpClientService? mcpClient = null,
         CancellationToken cancellationToken = default);
 }

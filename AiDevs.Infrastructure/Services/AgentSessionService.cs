@@ -14,11 +14,19 @@ public class AgentSessionService(IOpenRouterService openRouterService, IServiceP
         List<Type> handlerTypes,
         OpenRouterModel model,
         double temperature = 0,
-        int maxIterations = 20,       
+        int maxIterations = 20,
         Type? responseFormatType = null,
+        IMcpClientService? mcpClient = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var tools = toolsService.GetTools(handlerTypes);
+
+        if (mcpClient != null)
+        {
+            await mcpClient.ConnectAsync(cancellationToken);
+            var mcpTools = await mcpClient.GetToolsAsync(cancellationToken);
+            tools.AddRange(mcpTools);
+        }
 
         var messages = new List<IOpenRouterMessage>(initialMessages);
 
@@ -84,6 +92,8 @@ public class AgentSessionService(IOpenRouterService openRouterService, IServiceP
                         });
                     }
                 }
+                else if (mcpClient != null)
+                    result = await mcpClient.ExecuteToolAsync(functionName, toolCall.Function.Arguments, cancellationToken);
                 else
                     result = "Unknown function";
 

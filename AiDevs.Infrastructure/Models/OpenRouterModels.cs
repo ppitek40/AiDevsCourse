@@ -184,7 +184,7 @@ public class OpenRouterTool
     public OpenRouterFunction Function { get; set; } = new();
     
     [JsonIgnore]
-    public IFunctionHandler Handler { get; set; }
+    public IFunctionHandler? Handler { get; set; }
 }
 
 public class OpenRouterFunction

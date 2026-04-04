@@ -69,7 +69,7 @@ Zwróć TYLKO gotową deklarację, bez żadnych dodatkowych komentarzy.
             0.4,
             30,
             null,
-            cancellationToken))
+            cancellationToken: cancellationToken))
         {
             yield return update;
 

@@ -15,6 +15,7 @@ using AiDevs.Solutions.Task12;
 using AiDevs.Solutions.Task13;
 using AiDevs.Solutions.Task14;
 using AiDevs.Solutions.Task15;
+using AiDevs.Solutions.Task16;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -102,6 +103,9 @@ builder.Services.AddTransient<SearchItemsFunction>();
 builder.Services.AddTransient<UseToolFunction>();
 builder.Services.AddTransient<SubmitFunction>();
 
+// Register function handlers for Task16
+builder.Services.AddTransient<AiDevs.Solutions.Task16.UseApiFunction>();
+
 // Register all task solutions
 builder.Services.AddTransient<ITaskSolution, Task01Solution>();
 builder.Services.AddTransient<ITaskSolution, Task02Solution>();
@@ -118,6 +122,7 @@ builder.Services.AddTransient<ITaskSolution, Task12Solution>();
 builder.Services.AddTransient<ITaskSolution, Task13Solution>();
 builder.Services.AddTransient<ITaskSolution, Task14Solution>();
 builder.Services.AddTransient<ITaskSolution, Task15Solution>();
+builder.Services.AddTransient<ITaskSolution, Task16Solution>();
 
 // Add more task solutions here as you implement them:
 // ... etc
