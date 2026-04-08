@@ -16,6 +16,10 @@ using AiDevs.Solutions.Task13;
 using AiDevs.Solutions.Task14;
 using AiDevs.Solutions.Task15;
 using AiDevs.Solutions.Task16;
+using AiDevs.Solutions.Task17;
+using AiDevs.Solutions.Task18;
+using AiDevs.Solutions.Task19;
+using AiDevs.Solutions.Task20;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -106,6 +110,19 @@ builder.Services.AddTransient<SubmitFunction>();
 // Register function handlers for Task16
 builder.Services.AddTransient<AiDevs.Solutions.Task16.UseApiFunction>();
 
+// Register function handlers for Task17
+builder.Services.AddTransient<GetAllDataFunction>();
+builder.Services.AddTransient<GenerateAndSendConfigsFunction>();
+
+// Register function handlers for Task18
+builder.Services.AddTransient<SendCommandTask18Function>();
+
+// Register function handlers for Task19
+builder.Services.AddTransient<SendCommandTask19Function>();
+
+// Register function handlers for Task20
+builder.Services.AddTransient<SendCommandTask20Function>();
+
 // Register all task solutions
 builder.Services.AddTransient<ITaskSolution, Task01Solution>();
 builder.Services.AddTransient<ITaskSolution, Task02Solution>();
@@ -123,6 +140,10 @@ builder.Services.AddTransient<ITaskSolution, Task13Solution>();
 builder.Services.AddTransient<ITaskSolution, Task14Solution>();
 builder.Services.AddTransient<ITaskSolution, Task15Solution>();
 builder.Services.AddTransient<ITaskSolution, Task16Solution>();
+builder.Services.AddTransient<ITaskSolution, Task17Solution>();
+builder.Services.AddTransient<ITaskSolution, Task18Solution>();
+builder.Services.AddTransient<ITaskSolution, Task19Solution>();
+builder.Services.AddTransient<ITaskSolution, Task20Solution>();
 
 // Add more task solutions here as you implement them:
 // ... etc
